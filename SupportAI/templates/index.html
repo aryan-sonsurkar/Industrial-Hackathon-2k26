@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SupportAI - Customer Support Automation</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f7f6;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container {
+            width: 100%;
+            max-width: 800px;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        h1 { color: #333; text-align: center; }
+        .chat-box {
+            height: 300px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+            background: #fafafa;
+        }
+        .user-msg { color: #007bff; font-weight: bold; margin-bottom: 5px; }
+        .bot-msg { color: #28a745; margin-bottom: 15px; }
+        .input-group { display: flex; gap: 10px; }
+        input[type="text"] {
+            flex-grow: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover { background-color: #0056b3; }
+        .details {
+            margin-top: 20px;
+            padding: 15px;
+            background: #e9ecef;
+            border-radius: 5px;
+            font-size: 0.9em;
+        }
+        .detail-item { margin-bottom: 5px; }
+        .escalation-yes { color: #dc3545; font-weight: bold; }
+        .escalation-no { color: #28a745; font-weight: bold; }
+        .stats-btn {
+            margin-top: 10px;
+            background-color: #6c757d;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>SupportAI Dashboard</h1>
+        
+        <div class="chat-box" id="chatWindow">
+            <div class="bot-msg">Welcome to SupportAI! How can I assist you today?</div>
+        </div>
+
+        <div class="input-group">
+            <input type="text" id="userInput" placeholder="Type your message here..." onkeypress="handleKeyPress(event)">
+            <button onclick="sendMessage()">Send</button>
+        </div>
+
+        <div id="aiDetails" class="details" style="display:none;">
+            <h3>AI Analysis Breakdown</h3>
+            <div class="detail-item"><strong>Category:</strong> <span id="resCategory"></span></div>
+            <div class="detail-item"><strong>Sentiment:</strong> <span id="resSentiment"></span></div>
+            <div class="detail-item"><strong>Confidence:</strong> <span id="resConfidence"></span>%</div>
+            <div class="detail-item"><strong>Escalation:</strong> <span id="resEscalation"></span></div>
+        </div>
+
+        <button class="stats-btn" onclick="viewStats()">View Session Stats</button>
+        <div id="statsBox" class="details" style="display:none;"></div>
+    </div>
+
+    <script src="/static/script.js"></script>
+</body>
+</html>
