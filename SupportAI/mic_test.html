@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Microphone Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .btn { padding: 15px; font-size: 18px; margin: 10px; cursor: pointer; }
+        .status { padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .info { background: #d1ecf1; color: #0c5460; }
+        #volume { width: 100%; height: 50px; background: #f0f0f0; }
+    </style>
+</head>
+<body>
+    <h1>🎤 Basic Microphone Test</h1>
+    
+    <button class="btn" onclick="testMicrophone()">Test Microphone</button>
+    <button class="btn" onclick="stopMicrophone()">Stop</button>
+    
+    <div id="status" class="status info">Click Test Microphone to check audio input</div>
+    <canvas id="volume"></canvas>
+    
+    <script>
+        let audioContext;
+        let microphone;
+        let analyser;
+        let javascriptNode;
+        
+        function updateStatus(message, type) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = message;
+            statusDiv.className = 'status ' + type;
+        }
+        
+        function testMicrophone() {
+            updateStatus('Requesting microphone access...', 'info');
+            
+            navigator.mediaDevices.getUserMedia({ audio: true })
+                .then(function(stream) {
+                    updateStatus('✅ Microphone access granted! Testing audio levels...', 'success');
+                    
+                    // Set up audio analysis
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    analyser = audioContext.createAnalyser();
+                    microphone = audioContext.createMediaStreamSource(stream);
+                    javascriptNode = audioContext.createScriptProcessor(2048, 1, 1);
+                    
+                    analyser.smoothingTimeConstant = 0.8;
+                    analyser.fftSize = 1024;
+                    
+                    microphone.connect(analyser);
+                    analyser.connect(javascriptNode);
+                    javascriptNode.connect(audioContext.destination);
+                    
+                    javascriptNode.onaudioprocess = function() {
+                        const array = new Uint8Array(analyser.frequencyBinCount);
+                        analyser.getByteFrequencyData(array);
+                        
+                        // Calculate average volume
+                        let values = 0;
+                        const length = array.length;
+                        for (let i = 0; i < length; i++) {
+                            values += array[i];
+                        }
+                        const average = values / length;
+                        
+                        // Update status based on volume
+                        if (average > 10) {
+                            updateStatus('🎤 Microphone working! Volume: ' + Math.round(average) + ' (Speak normally)', 'success');
+                        } else if (average > 5) {
+                            updateStatus('🎤 Microphone detecting sound... Volume: ' + Math.round(average) + ' (Speak louder)', 'info');
+                        } else {
+                            updateStatus('🔇 No sound detected. Volume: ' + Math.round(average) + ' (Check microphone)', 'error');
+                        }
+                    };
+                    
+                    updateStatus('✅ Microphone active! Speak into your microphone...', 'success');
+                })
+                .catch(function(err) {
+                    console.error('Microphone error:', err);
+                    if (err.name === 'NotAllowedError') {
+                        updateStatus('❌ Microphone permission denied. Click the 🔒 icon in your browser to allow microphone access.', 'error');
+                    } else if (err.name === 'NotFoundError') {
+                        updateStatus('❌ No microphone found. Please connect a microphone.', 'error');
+                    } else if (err.name === 'NotReadableError') {
+                        updateStatus('❌ Microphone is being used by another application.', 'error');
+                    } else {
+                        updateStatus('❌ Microphone error: ' + err.message, 'error');
+                    }
+                });
+        }
+        
+        function stopMicrophone() {
+            if (microphone) {
+                microphone.disconnect();
+                updateStatus('🔇 Microphone stopped', 'info');
+            }
+        }
+        
+        // Auto-start test
+        window.addEventListener('load', function() {
+            setTimeout(testMicrophone, 1000);
+        });
+    </script>
+</body>
+</html>

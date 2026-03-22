@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voice Recognition Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .test-btn { padding: 15px; font-size: 18px; margin: 10px; cursor: pointer; }
+        .status { padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .listening { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .success { background: #d1ecf1; color: #0c5460; }
+        #transcript { font-style: italic; color: #666; }
+    </style>
+</head>
+<body>
+    <h1>🎤 Voice Recognition Test</h1>
+    
+    <button class="test-btn" onclick="testVoiceAPI()">Test Voice API</button>
+    <button class="test-btn" onclick="startTestListening()">Start Listening</button>
+    <button class="test-btn" onclick="stopTestListening()">Stop Listening</button>
+    
+    <div id="status" class="status">Ready to test</div>
+    <div id="transcript"></div>
+    
+    <script>
+        let testRecognition = null;
+        
+        function updateStatus(message, type) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = message;
+            statusDiv.className = 'status ' + type;
+        }
+        
+        function testVoiceAPI() {
+            updateStatus('Testing voice API availability...', 'success');
+            
+            if ('webkitSpeechRecognition' in window) {
+                updateStatus('✅ WebkitSpeechRecognition available (Chrome/Edge)', 'success');
+            } else if ('SpeechRecognition' in window) {
+                updateStatus('✅ SpeechRecognition available (Firefox)', 'success');
+            } else {
+                updateStatus('❌ Speech recognition NOT available in this browser', 'error');
+                return;
+            }
+            
+            // Test creating recognition object
+            try {
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                testRecognition = new SpeechRecognition();
+                updateStatus('✅ Speech recognition object created successfully', 'success');
+            } catch (error) {
+                updateStatus('❌ Failed to create speech recognition: ' + error.message, 'error');
+            }
+        }
+        
+        function startTestListening() {
+            if (!testRecognition) {
+                updateStatus('❌ Please test voice API first', 'error');
+                return;
+            }
+            
+            // Check microphone permission first
+            navigator.mediaDevices.getUserMedia({ audio: true })
+                .then(function(stream) {
+                    console.log('Microphone access granted');
+                    stream.getTracks().forEach(track => track.stop()); // Stop test stream
+                    
+                    // Configure recognition for better sensitivity
+                    testRecognition.continuous = false;
+                    testRecognition.interimResults = true;
+                    testRecognition.lang = 'en-US';
+                    testRecognition.maxAlternatives = 1;
+                    
+                    // Add timeout to prevent infinite listening
+                    let speechTimeout;
+                    
+                    testRecognition.onstart = function() {
+                        updateStatus('🎤 Listening... Speak clearly into your microphone for 5 seconds!', 'listening');
+                        document.getElementById('transcript').textContent = '';
+                        
+                        // Auto-stop after 5 seconds if no speech
+                        speechTimeout = setTimeout(() => {
+                            if (testRecognition) {
+                                testRecognition.stop();
+                                updateStatus('⏰ Timeout: No speech detected in 5 seconds. Try speaking louder.', 'error');
+                            }
+                        }, 5000);
+                    };
+                    
+                    testRecognition.onresult = function(event) {
+                        console.log('Speech result event:', event);
+                        clearTimeout(speechTimeout); // Cancel timeout on speech
+                        
+                        const transcript = Array.from(event.results)
+                            .map(result => result[0].transcript)
+                            .join('');
+                        
+                        console.log('Transcript text:', transcript);
+                        document.getElementById('transcript').textContent = 'Heard: "' + transcript + '"';
+                        
+                        if (event.results[0].isFinal) {
+                            updateStatus('✅ Speech captured: ' + transcript, 'success');
+                        }
+                    };
+                    
+                    testRecognition.onerror = function(event) {
+                        clearTimeout(speechTimeout);
+                        console.error('Speech recognition error:', event.error, event);
+                        
+                        if (event.error === 'no-speech') {
+                            updateStatus('🔇 No speech detected. Try: 1) Speak louder 2) Check microphone 3) Reduce background noise', 'error');
+                        } else if (event.error === 'not-allowed') {
+                            updateStatus('❌ Microphone permission denied. Please allow microphone access.', 'error');
+                        } else if (event.error === 'audio-capture') {
+                            updateStatus('❌ No microphone found. Please check your audio devices.', 'error');
+                        } else if (event.error === 'network') {
+                            updateStatus('❌ Network error. Check your internet connection.', 'error');
+                        } else {
+                            updateStatus('❌ Speech recognition error: ' + event.error, 'error');
+                        }
+                    };
+                    
+                    testRecognition.onend = function() {
+                        clearTimeout(speechTimeout);
+                        console.log('Speech recognition ended');
+                        updateStatus('🔇 Listening stopped. Click Start Listening to try again.', 'success');
+                    };
+                    
+                    try {
+                        console.log('Starting speech recognition...');
+                        testRecognition.start();
+                    } catch (error) {
+                        updateStatus('❌ Failed to start listening: ' + error.message, 'error');
+                    }
+                })
+                .catch(function(err) {
+                    console.error('Microphone access error:', err);
+                    if (err.name === 'NotAllowedError') {
+                        updateStatus('❌ Microphone permission denied. Please click the 🔒 icon in your browser and allow microphone access.', 'error');
+                    } else if (err.name === 'NotFoundError') {
+                        updateStatus('❌ No microphone found. Please connect a microphone.', 'error');
+                    } else {
+                        updateStatus('❌ Microphone error: ' + err.message, 'error');
+                    }
+                });
+        }
+        
+        function stopTestListening() {
+            if (testRecognition) {
+                try {
+                    testRecognition.stop();
+                } catch (error) {
+                    updateStatus('❌ Failed to stop listening: ' + error.message, 'error');
+                }
+            }
+        }
+        
+        // Auto-test on page load
+        window.addEventListener('load', function() {
+            setTimeout(testVoiceAPI, 500);
+        });
+    </script>
+</body>
+</html>

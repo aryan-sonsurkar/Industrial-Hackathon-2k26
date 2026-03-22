@@ -2,6 +2,8 @@ import os
 import json
 import requests
 import time
+import re
+from datetime import datetime, timedelta
 from flask import Flask, request, jsonify, render_template
 
 app = Flask(__name__)
@@ -73,7 +75,7 @@ def check_repeated_issue(query):
 def parse_ollama_output(raw_text):
     """
     Parses the raw text output from Ollama into a structured dictionary.
-    Robust parser: scans all lines for known keys, handles preamble/extra text.
+    Enhanced parser with decision trace and escalation level support.
     """
     parsed = {
         "category": "General",
@@ -83,6 +85,8 @@ def parse_ollama_output(raw_text):
         "issue": "N/A",
         "response": "How can I help you today?",
         "escalation": "No",
+        "escalation_level": "low",
+        "decision_trace": "Default response - no analysis performed",
         "reason": "N/A"
     }
 
@@ -95,6 +99,8 @@ def parse_ollama_output(raw_text):
         "issue": "issue",
         "response": "response",
         "escalation": "escalation",
+        "escalation_level": "escalation_level",
+        "decision_trace": "decision_trace",
         "reason": "reason"
     }
 
@@ -137,8 +143,178 @@ def parse_ollama_output(raw_text):
     flush()  # Save the last key
     return parsed
 
+def calculate_confidence_score(parsed_data, user_input, is_repeated):
+    """
+    Logic-based confidence scoring system.
+    Returns confidence score (0-100) based on multiple factors.
+    """
+    score = 50  # Base score
+    
+    # Factor 1: Category specificity (20 points)
+    specific_categories = ["Billing", "Technical", "Account"]
+    if parsed_data.get("category") in specific_categories:
+        score += 20
+    elif parsed_data.get("category") == "General":
+        score += 5
+    
+    # Factor 2: Sentiment clarity (15 points)
+    if parsed_data.get("sentiment") in ["Angry", "Happy"]:
+        score += 15
+    elif parsed_data.get("sentiment") == "Neutral":
+        score += 8
+    
+    # Factor 3: Issue clarity (15 points)
+    issue = parsed_data.get("issue", "").lower()
+    if issue and issue != "n/a" and len(issue) > 10:
+        score += 15
+    elif issue and len(issue) > 5:
+        score += 8
+    
+    # Factor 4: Service specificity (10 points)
+    service = parsed_data.get("service", "").lower()
+    specific_services = ["web development", "mobile app development", "digital marketing", "software solutions"]
+    if any(svc in service for svc in specific_services):
+        score += 10
+    
+    # Factor 5: User input quality (10 points)
+    if len(user_input) > 20 and not any(word in user_input.lower() for word in ["help", "hello", "hi", "test"]):
+        score += 10
+    elif len(user_input) > 10:
+        score += 5
+    
+    # Factor 6: Repetition penalty (20 points)
+    if is_repeated:
+        score -= 20
+    
+    # Factor 7: Decision trace quality (10 points)
+    trace = parsed_data.get("decision_trace", "").lower()
+    if len(trace) > 50 and any(keyword in trace for keyword in ["because", "since", "due to", "based on"]):
+        score += 10
+    
+    return max(0, min(100, score))
+
+def determine_escalation_level(parsed_data, confidence, is_repeated, user_input):
+    """
+    Determines escalation level (low, medium, high) based on multiple factors.
+    """
+    escalation_score = 0
+    
+    # High escalation indicators
+    if parsed_data.get("sentiment") == "Angry":
+        escalation_score += 30
+    if confidence < 60:
+        escalation_score += 25
+    if is_repeated:
+        escalation_score += 20
+    if any(word in user_input.lower() for word in ["agent", "human", "manager", "supervisor", "not helpful", "frustrated"]):
+        escalation_score += 35
+    if "urgent" in user_input.lower() or "emergency" in user_input.lower():
+        escalation_score += 30
+    
+    # Medium escalation indicators
+    if confidence < 80:
+        escalation_score += 15
+    if parsed_data.get("category") == "Billing":
+        escalation_score += 10
+    if "complaint" in user_input.lower() or "unhappy" in user_input.lower():
+        escalation_score += 15
+    
+    if escalation_score >= 50:
+        return "high"
+    elif escalation_score >= 25:
+        return "medium"
+    else:
+        return "low"
+
+def enhance_service_mapping(user_input, category):
+    """
+    Intelligent service mapping based on query content and category.
+    """
+    user_lower = user_input.lower()
+    
+    # Web Development indicators
+    web_keywords = ["website", "web", "frontend", "backend", "html", "css", "javascript", "react", "vue", "angular", "django", "flask"]
+    if any(keyword in user_lower for keyword in web_keywords):
+        return "Web Development"
+    
+    # Mobile App Development indicators
+    mobile_keywords = ["app", "mobile", "ios", "android", "iphone", "smartphone", "tablet", "react native", "flutter"]
+    if any(keyword in user_lower for keyword in mobile_keywords):
+        return "Mobile App Development"
+    
+    # Digital Marketing indicators
+    marketing_keywords = ["marketing", "seo", "social media", "advertising", "campaign", "brand", "promotion", "google ads", "facebook"]
+    if any(keyword in user_lower for keyword in marketing_keywords):
+        return "Digital Marketing"
+    
+    # Software Solutions indicators
+    software_keywords = ["software", "system", "application", "platform", "integration", "api", "database", "cloud", "automation"]
+    if any(keyword in user_lower for keyword in software_keywords):
+        return "Software Solutions"
+    
+    # Category-based fallback
+    if category == "Technical":
+        return "Software Solutions"
+    elif category == "Billing":
+        return "General Support"
+    else:
+        return "General Support"
+
+def generate_decision_trace(parsed_data, confidence, escalation_level, is_repeated, user_input):
+    """
+    Generates a detailed decision trace explaining the AI's reasoning.
+    """
+    trace_parts = []
+    
+    # Category reasoning
+    category = parsed_data.get("category", "General")
+    if category == "Billing":
+        trace_parts.append(f"Detected billing-related keywords in query")
+    elif category == "Technical":
+        trace_parts.append(f"Identified technical issues or system problems")
+    elif category == "Account":
+        trace_parts.append(f"Recognized account management or user access concerns")
+    else:
+        trace_parts.append(f"General inquiry - no specific category detected")
+    
+    # Sentiment reasoning
+    sentiment = parsed_data.get("sentiment", "Neutral")
+    if sentiment == "Angry":
+        trace_parts.append(f"User expresses frustration or anger - requires careful handling")
+    elif sentiment == "Happy":
+        trace_parts.append(f"User appears satisfied or positive")
+    else:
+        trace_parts.append(f"User maintains neutral emotional tone")
+    
+    # Confidence reasoning
+    if confidence >= 80:
+        trace_parts.append(f"High confidence ({confidence}%) - query is clear and specific")
+    elif confidence >= 60:
+        trace_parts.append(f"Moderate confidence ({confidence}%) - query has some ambiguity")
+    else:
+        trace_parts.append(f"Low confidence ({confidence}%) - query is unclear or complex")
+    
+    # Escalation reasoning
+    if escalation_level == "high":
+        trace_parts.append(f"High escalation risk - immediate attention may be required")
+    elif escalation_level == "medium":
+        trace_parts.append(f"Medium escalation risk - monitor for further indicators")
+    else:
+        trace_parts.append(f"Low escalation risk - standard support protocol sufficient")
+    
+    # Repetition reasoning
+    if is_repeated:
+        trace_parts.append(f"User has mentioned this issue before - potential unresolved problem")
+    
+    # Service mapping reasoning
+    service = parsed_data.get("service", "General Support")
+    if service != "General Support":
+        trace_parts.append(f"Mapped to {service} based on query content")
+    
+    return "; ".join(trace_parts)
+
 def get_ai_response(user_input):
-    """Calls Ollama API and returns structured response."""
+    """Calls Ollama API and returns enhanced structured response."""
     
     is_repeated = check_repeated_issue(user_input)
     prompt_prefix = "I see you're still facing this issue... " if is_repeated else ""
@@ -147,19 +323,21 @@ def get_ai_response(user_input):
 
 The company provides:
 - Web Development
-- Mobile App Development
+- Mobile App Development  
 - Digital Marketing
 - Software Solutions
 
 Analyze the user query and respond ONLY in the exact format below. Do NOT add any extra text, greetings, or explanation outside the format.
 
 Category: <one of: Billing, Technical, Account, General>
-Service: <most relevant service from the company's offerings>
+Service: <most relevant service from company offerings>
 Sentiment: <one of: Angry, Neutral, Happy>
 Confidence: <integer from 0 to 100>
 Issue: <one line summary of the user's issue>
 Response: <2 to 4 line helpful response to the user>
 Escalation: <Yes or No>
+Escalation_Level: <low, medium, or high>
+Decision_Trace: <detailed explanation of AI reasoning process>
 Reason: <brief reason for the escalation decision>
 
 User Query: {user_input}"""
@@ -172,25 +350,48 @@ User Query: {user_input}"""
 
     try:
         # Timeout tuple: (connect_timeout, read_timeout)
-        # llama3 on CPU can take up to 120 seconds — never use a short timeout
         response = requests.post(OLLAMA_URL, json=payload, timeout=(5, 120))
         if response.status_code == 200:
             raw_output = response.json().get("response", "")
             parsed_data = parse_ollama_output(raw_output)
             
-            # Additional Escalation Checks (Manual overrides)
-            if any(word in user_input.lower() for word in ["agent", "not helpful"]):
-                parsed_data["escalation"] = "Yes"
-                parsed_data["reason"] = "User explicitly requested agent or expressed frustration."
+            # Enhanced service mapping
+            parsed_data["service"] = enhance_service_mapping(user_input, parsed_data.get("category", "General"))
             
-            if parsed_data["confidence"] < 75:
-                parsed_data["escalation"] = "Yes"
-                parsed_data["reason"] = "Low confidence in AI analysis."
+            # Logic-based confidence scoring
+            confidence = calculate_confidence_score(parsed_data, user_input, is_repeated)
+            parsed_data["confidence"] = confidence
+            
+            # Determine escalation level
+            escalation_level = determine_escalation_level(parsed_data, confidence, is_repeated, user_input)
+            parsed_data["escalation_level"] = escalation_level
+            
+            # Generate decision trace
+            parsed_data["decision_trace"] = generate_decision_trace(parsed_data, confidence, escalation_level, is_repeated, user_input)
+            
+            # Enhanced escalation logic
+            escalation_required = False
+            escalation_reasons = []
+            
+            if any(word in user_input.lower() for word in ["agent", "not helpful", "human", "manager", "supervisor"]):
+                escalation_required = True
+                escalation_reasons.append("User explicitly requested agent or expressed frustration")
+            
+            if confidence < 75:
+                escalation_required = True
+                escalation_reasons.append("Low confidence in AI analysis")
+            
+            if escalation_level == "high":
+                escalation_required = True
+                escalation_reasons.append("High escalation risk detected")
                 
             if is_repeated:
+                escalation_required = True
+                escalation_reasons.append("User repeating issue multiple times")
                 parsed_data["response"] = prompt_prefix + parsed_data["response"]
-                parsed_data["escalation"] = "Yes"
-                parsed_data["reason"] = "User repeating issue multiple times."
+            
+            parsed_data["escalation"] = "Yes" if escalation_required else "No"
+            parsed_data["reason"] = "; ".join(escalation_reasons) if escalation_reasons else "No escalation required"
 
             return parsed_data
         else:
@@ -205,7 +406,9 @@ User Query: {user_input}"""
             "issue": "N/A",
             "response": "We are facing technical issues. Please try again later.",
             "escalation": "Yes",
-            "reason": "Ollama service unavailable or timeout."
+            "escalation_level": "high",
+            "decision_trace": "System failure - unable to process query; fallback mode activated",
+            "reason": "Ollama service unavailable or timeout"
         }
 
 @app.route('/')

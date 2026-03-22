@@ -64,27 +64,136 @@
             margin-top: 10px;
             background-color: #6c757d;
         }
+        .voice-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .mic-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+        .mic-btn.active {
+            background-color: #dc3545;
+            animation: pulse 1.5s infinite;
+        }
+        .mic-btn:hover:not(.active) {
+            background-color: #0056b3;
+            transform: scale(1.05);
+        }
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(220, 53, 69, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
+        }
+        .voice-status {
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: bold;
+            display: none;
+        }
+        .voice-status.listening {
+            background-color: #28a745;
+            color: white;
+            display: inline-block;
+        }
+        .voice-status.processing {
+            background-color: #ffc107;
+            color: #333;
+            display: inline-block;
+        }
+        .voice-status.speaking {
+            background-color: #17a2b8;
+            color: white;
+            display: inline-block;
+        }
+        .voice-status.error {
+            background-color: #dc3545;
+            color: white;
+            display: inline-block;
+        }
+        .transcript {
+            font-style: italic;
+            color: #666;
+            margin-bottom: 5px;
+            font-size: 12px;
+        }
+        .call-simulation {
+            text-align: center;
+            padding: 10px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            font-weight: bold;
+            display: none;
+        }
+        .call-simulation.active {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .voice-toggle {
+            background-color: #28a745;
+            margin-left: 10px;
+        }
+        .voice-toggle.active {
+            background-color: #dc3545;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>SupportAI Dashboard</h1>
         
+        <div class="call-simulation" id="callSimulation">
+            <div id="callStatus">🤖 Connecting to AI Agent...</div>
+        </div>
+
+        <div class="voice-controls">
+            <button class="mic-btn" id="micBtn" onclick="toggleVoiceMode()" title="Start Voice Chat">
+                🎤
+            </button>
+            <div class="voice-status" id="voiceStatus" style="display:none;">Ready</div>
+            <button class="voice-toggle" id="voiceToggle" onclick="toggleVoiceMode()" style="display:none;">
+                Enable Voice Mode
+            </button>
+        </div>
+        
         <div class="chat-box" id="chatWindow">
             <div class="bot-msg">Welcome to SupportAI! How can I assist you today?</div>
         </div>
 
-        <div class="input-group">
+        <div class="input-group" id="textInputGroup">
             <input type="text" id="userInput" placeholder="Type your message here..." onkeypress="handleKeyPress(event)">
             <button onclick="sendMessage()">Send</button>
         </div>
+        
+        <div id="voiceTranscript" class="transcript" style="display:none;"></div>
 
-        <div id="aiDetails" class="details" style="display:none;">
+        <div class="details" id="aiDetails" style="display:none;">
             <h3>AI Analysis Breakdown</h3>
             <div class="detail-item"><strong>Category:</strong> <span id="resCategory"></span></div>
             <div class="detail-item"><strong>Sentiment:</strong> <span id="resSentiment"></span></div>
             <div class="detail-item"><strong>Confidence:</strong> <span id="resConfidence"></span>%</div>
             <div class="detail-item"><strong>Escalation:</strong> <span id="resEscalation"></span></div>
+            <div class="detail-item"><strong>Escalation Level:</strong> <span id="resEscalationLevel"></span></div>
+            <div class="detail-item"><strong>Decision Trace:</strong> <span id="resDecisionTrace" style="font-size: 0.85em; color: #666;"></span></div>
+        </div>
+        
+        <div style="margin-top: 15px; padding: 10px; background: #f8f9fa; border-radius: 5px; font-size: 12px; color: #666;">
+            <strong>Voice Mode:</strong> Click 🎤 to start talking, or type messages below. Works best in Chrome browser.
         </div>
 
         <button class="stats-btn" onclick="viewStats()">View Session Stats</button>
