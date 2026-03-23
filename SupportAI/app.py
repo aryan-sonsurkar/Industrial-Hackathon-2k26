@@ -313,28 +313,117 @@ def generate_decision_trace(parsed_data, confidence, escalation_level, is_repeat
     
     return "; ".join(trace_parts)
 
+def is_off_topic_query(user_input):
+    """
+    Pre-filter to detect off-topic queries before sending to LLM.
+    Returns True if query is off-topic (jokes, weather, general chat, etc.)
+    """
+    user_lower = user_input.lower().strip()
+    
+    # Empty or too short
+    if len(user_lower) < 2:
+        return True
+    
+    # Define support-related keywords
+    support_keywords = [
+        # Billing
+        "bill", "invoice", "payment", "charge", "refund", "price", "cost", "subscription", 
+        "plan", "pricing", "money", "amount", "credit", "debit", "transaction",
+        # Technical
+        "error", "bug", "issue", "problem", "crash", "not working", "broken", "fail",
+        "website", "app", "login", "password", "account", "access", "connection",
+        "server", "database", "api", "loading", "slow", "timeout",
+        # Services
+        "web", "mobile", "app", "software", "development", "marketing", "seo", 
+        "advertising", "campaign", "design", "integration", "cloud", "hosting",
+        # Support
+        "help", "support", "assist", "service", "question", "how to", "fix", "solve",
+        "upgrade", "update", "install", "configure", "setup"
+    ]
+    
+    # Define off-topic patterns
+    off_topic_patterns = [
+        # Jokes and humor
+        "joke", "funny", "laugh", "humor", "comedy", "haha", "lol",
+        # Weather and time
+        "weather", "temperature", "rain", "sunny", "time", "date", "clock",
+        # Personal and casual
+        "how are you", "what's up", "sup", "hello", "hi", "hey", "good morning",
+        "good afternoon", "good evening", "good night", "bye", "see you",
+        "who are you", "what are you", "tell me about", "your name",
+        # General knowledge (not support related)
+        "capital of", "president", "prime minister", "history of", "define",
+        "meaning of", "synonym", "translate", "convert", "calculate",
+        # Entertainment
+        "movie", "song", "music", "game", "play", "sport", "team", "player",
+        "recipe", "food", "cook", "restaurant",
+        # Unrelated tech
+        "bitcoin", "crypto", "stock", "trading", "invest", "news"
+    ]
+    
+    # Check if query matches support keywords
+    has_support_keyword = any(keyword in user_lower for keyword in support_keywords)
+    
+    # Check if query matches off-topic patterns
+    is_off_topic = any(pattern in user_lower for pattern in off_topic_patterns)
+    
+    # Return True if no support keywords AND matches off-topic patterns
+    # OR if it's just greeting without context
+    if is_off_topic and not has_support_keyword:
+        return True
+    
+    # Check for pure greetings (short and no support context)
+    greetings = ["hi", "hello", "hey", "good morning", "good afternoon", "good evening"]
+    if user_lower in greetings:
+        return True
+    
+    return False
+
+
 def get_ai_response(user_input):
     """Calls Ollama API and returns enhanced structured response."""
+    
+    # Pre-filter off-topic queries
+    if is_off_topic_query(user_input):
+        return {
+            "category": "General",
+            "service": "N/A",
+            "sentiment": "Neutral",
+            "confidence": 95,
+            "issue": "Off-topic query",
+            "response": "I'm designed to assist with customer support queries only. Please ask about our services (Web Development, Mobile Apps, Digital Marketing, Software Solutions), billing, technical issues, or account management.",
+            "escalation": "No",
+            "escalation_level": "low",
+            "decision_trace": "Query identified as off-topic through keyword analysis; no customer support context detected; politely redirected to support topics",
+            "reason": "Off-topic query - not related to customer support"
+        }
     
     is_repeated = check_repeated_issue(user_input)
     prompt_prefix = "I see you're still facing this issue... " if is_repeated else ""
     
-    prompt = f"""You are an AI Customer Support Assistant for an IT company.
+    prompt = f"""You are an AI Customer Support Assistant for an IT company. Your ONLY purpose is to handle customer support queries related to our services.
 
-The company provides:
-- Web Development
-- Mobile App Development  
-- Digital Marketing
-- Software Solutions
+The company provides these services:
+- Web Development (websites, web apps, frontend, backend)
+- Mobile App Development (iOS, Android, cross-platform)
+- Digital Marketing (SEO, social media, advertising, campaigns)
+- Software Solutions (custom software, systems, integrations, cloud)
+
+STRICT RULES:
+1. ONLY respond to customer support queries related to our services, billing, technical issues, or account problems
+2. If the query is general chat (jokes, weather, personal questions, unrelated topics), respond: "I'm designed to assist with customer support queries only. Please ask about our services, billing, technical issues, or account management."
+3. If the query is unclear or outside our scope, set escalation to "Yes" with reason "Query outside support scope or unclear"
+4. NEVER engage in casual conversation or general knowledge questions
+5. Always maintain professional customer support tone
 
 Analyze the user query and respond ONLY in the exact format below. Do NOT add any extra text, greetings, or explanation outside the format.
 
 Category: <one of: Billing, Technical, Account, General>
-Service: <most relevant service from company offerings>
+Service: <most relevant service from company offerings OR "N/A" if off-topic>
 Sentiment: <one of: Angry, Neutral, Happy>
 Confidence: <integer from 0 to 100>
-Issue: <one line summary of the user's issue>
-Response: <2 to 4 line helpful response to the user>
+Issue: <one line summary of the user's issue OR "Off-topic query" if not support-related>
+Response: <professional support response, or redirection message if off-topic>
 Escalation: <Yes or No>
 Escalation_Level: <low, medium, or high>
 Decision_Trace: <detailed explanation of AI reasoning process>

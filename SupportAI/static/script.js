@@ -9,143 +9,372 @@ let voiceEnabled = false;
 function initializeVoiceRecognition() {
     console.log('Initializing voice recognition...');
     
-    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-        console.log('Speech recognition API available');
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        recognition = new SpeechRecognition();
-        
-        recognition.continuous = false;
-        recognition.interimResults = true;
-        recognition.lang = 'en-US';
-        
-        recognition.onstart = function() {
-            console.log('Speech recognition started');
-            isListening = true;
-            updateVoiceStatus('listening', 'Listening...');
-            updateCallStatus('🎤 Listening... Speak now');
-            document.getElementById('micBtn').classList.add('active');
-        };
-        
-        recognition.onresult = function(event) {
-            console.log('Speech recognition result:', event);
-            const transcript = Array.from(event.results)
-                .map(result => result[0].transcript)
-                .join('');
-            
-            console.log('Transcript:', transcript);
-            
-            if (event.results[0].isFinal) {
-                handleSpeechResult(transcript);
-            } else {
-                // Show interim transcript
-                document.getElementById('voiceTranscript').textContent = `Hearing: "${transcript}"`;
-                document.getElementById('voiceTranscript').style.display = 'block';
-            }
-        };
-        
-        recognition.onerror = function(event) {
-            console.error('Speech recognition error:', event.error);
-            handleVoiceError(event.error);
-        };
-        
-        recognition.onend = function() {
-            console.log('Speech recognition ended');
-            isListening = false;
-            document.getElementById('micBtn').classList.remove('active');
-            if (!isSpeaking) {
-                updateVoiceStatus('', 'Ready');
-                updateCallStatus('🤖 AI Agent Ready');
-            }
-        };
-        
-        voiceEnabled = true;
-        console.log('Voice recognition initialized successfully');
-        document.getElementById('voiceToggle').style.display = 'inline-block';
-        
-        // Show ready status
-        updateCallStatus('🤖 AI Agent Ready');
-        
-    } else {
+    // Cross-browser support check
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    
+    if (!SpeechRecognition) {
         console.warn('Speech recognition not supported in this browser');
-        showVoiceError('Voice recognition is not supported in your browser. Please use Chrome for the best experience.');
-    }
-}
-
-// Toggle Voice Mode
-function toggleVoiceMode() {
-    console.log('Toggle voice mode clicked. Voice enabled:', voiceEnabled, 'Is listening:', isListening);
-    
-    if (!voiceEnabled) {
-        showVoiceError('Voice features are not available in your browser. Please use Chrome.');
-        return;
-    }
-    
-    if (isListening) {
-        console.log('Stopping voice recognition');
-        stopListening();
-    } else {
-        console.log('Starting voice recognition');
-        startListening();
-    }
-}
-
-// Start Voice Recognition
-function startListening() {
-    console.log('Start listening called. Recognition:', recognition, 'Is speaking:', isSpeaking);
-    
-    if (!recognition || isSpeaking) {
-        console.log('Cannot start: recognition not available or AI is speaking');
+        showVoiceFallback();
         return;
     }
     
     try {
-        console.log('Starting speech recognition...');
-        recognition.start();
-        isVoiceMode = true;
-        document.getElementById('textInputGroup').style.opacity = '0.5';
-        document.getElementById('userInput').disabled = true;
-        document.getElementById('callSimulation').classList.add('active');
+        recognition = new SpeechRecognition();
+        setupRecognitionEvents();
+        voiceEnabled = true;
+        console.log('✅ Voice recognition initialized successfully');
+        
+        // Show ready status
+        updateCallStatus('🤖 AI Agent Ready');
+        document.getElementById('voiceToggle').style.display = 'inline-block';
+        
     } catch (error) {
-        console.error('Error starting recognition:', error);
-        showVoiceError('Failed to start voice recognition. Please try again.');
+        console.error('Failed to initialize speech recognition:', error);
+        showVoiceFallback();
     }
+}
+
+// Setup Recognition Events
+function setupRecognitionEvents() {
+    recognition.continuous = false;
+    recognition.interimResults = true;
+    recognition.lang = 'en-US';
+    recognition.maxAlternatives = 1;
+    
+    recognition.onstart = function() {
+        console.log('🎤 Speech recognition started');
+        isListening = true;
+        updateVoiceStatus('listening', 'Listening...');
+        updateCallStatus('🎤 Listening... Speak now');
+        document.getElementById('micBtn').classList.add('active');
+    };
+    
+    recognition.onresult = function(event) {
+        console.log('📝 Speech recognition result:', event);
+        
+        const result = event.results[event.resultIndex];
+        if (!result) return;
+        
+        const transcript = result[0].transcript;
+        const confidence = Math.round((result[0].confidence || 0) * 100);
+        
+        console.log(`Transcript: "${transcript}" (Confidence: ${confidence}%)`);
+        
+        // Show interim results
+        if (!result.isFinal) {
+            document.getElementById('voiceTranscript').textContent = `Hearing: "${transcript}"`;
+            document.getElementById('voiceTranscript').style.display = 'block';
+            return;
+        }
+        
+        // Handle final result
+        handleSpeechResult(transcript);
+    };
+    
+    recognition.onerror = function(event) {
+        console.error('❌ Speech recognition error:', event.error);
+        handleVoiceError(event.error);
+    };
+    
+    recognition.onend = function() {
+        console.log('🔇 Speech recognition ended');
+        isListening = false;
+        document.getElementById('micBtn').classList.remove('active');
+        document.getElementById('voiceTranscript').style.display = 'none';
+        
+        if (!isSpeaking) {
+            updateVoiceStatus('', 'Ready');
+            updateCallStatus('🤖 AI Agent Ready');
+        }
+    };
+}
+
+// Handle Speech Result
+function handleSpeechResult(transcript) {
+    if (!transcript || transcript.trim().length === 0) {
+        console.log('Empty transcript received');
+        return;
+    }
+    
+    console.log('✅ Final speech result:', transcript);
+    
+    // Hide interim transcript
+    document.getElementById('voiceTranscript').style.display = 'none';
+    
+    // Update status
+    updateVoiceStatus('processing', 'Processing...');
+    updateCallStatus('🤖 AI is thinking...');
+    
+    // Display user message in chat
+    const chatWindow = document.getElementById('chatWindow');
+    const userDiv = document.createElement('div');
+    userDiv.className = 'user-msg';
+    userDiv.textContent = `You (Voice): ${transcript}`;
+    chatWindow.appendChild(userDiv);
+    
+    // Send to backend
+    sendMessageToBackend(transcript);
+    
+    // Scroll to bottom
+    chatWindow.scrollTop = chatWindow.scrollHeight;
+}
+
+// Handle Voice Errors
+function handleVoiceError(error) {
+    let errorMessage = 'Voice recognition failed';
+    let userMessage = '';
+    
+    switch(error) {
+        case 'no-speech':
+            errorMessage = 'No speech detected';
+            userMessage = '🔇 No speech detected. Please speak louder or check your microphone.';
+            break;
+        case 'not-allowed':
+            errorMessage = 'Microphone permission denied';
+            userMessage = '❌ Microphone access denied. Please click the 🔒 icon in your browser and allow microphone access.';
+            break;
+        case 'audio-capture':
+            errorMessage = 'No microphone found';
+            userMessage = '❌ No microphone found. Please connect a microphone.';
+            break;
+        case 'network':
+            errorMessage = 'Network error';
+            userMessage = '❌ Network error. Please check your internet connection.';
+            break;
+        case 'service-not-allowed':
+            errorMessage = 'Speech recognition service not allowed';
+            userMessage = '❌ Speech recognition service is not available. Please try text mode.';
+            break;
+        default:
+            errorMessage = `Speech recognition error: ${error}`;
+            userMessage = `❌ Voice error: ${error}. Please try again.`;
+    }
+    
+    console.error('Voice Error:', errorMessage);
+    updateVoiceStatus('error', 'Voice Error');
+    updateCallStatus(`❌ ${errorMessage}`);
+    
+    // Show error in chat
+    const chatWindow = document.getElementById('chatWindow');
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'bot-msg';
+    errorDiv.style.color = '#dc3545';
+    errorDiv.textContent = userMessage;
+    chatWindow.appendChild(errorDiv);
+    chatWindow.scrollTop = chatWindow.scrollHeight;
+    
+    // Reset status after delay
+    setTimeout(() => {
+        updateVoiceStatus('', 'Ready');
+        updateCallStatus('🤖 AI Agent Ready');
+    }, 3000);
+}
+
+// Show Voice Fallback
+function showVoiceFallback() {
+    voiceEnabled = false;
+    updateVoiceStatus('error', 'Not Supported');
+    updateCallStatus('❌ Voice not supported');
+    
+    const chatWindow = document.getElementById('chatWindow');
+    const fallbackDiv = document.createElement('div');
+    fallbackDiv.className = 'bot-msg';
+    fallbackDiv.style.color = '#ffc107';
+    fallbackDiv.textContent = '🔇 Voice recognition is not supported in your browser. Please use text input below.';
+    chatWindow.appendChild(fallbackDiv);
+    chatWindow.scrollTop = chatWindow.scrollHeight;
+    
+    // Hide voice button
+    document.getElementById('micBtn').style.display = 'none';
+}
+
+// Toggle Voice Mode
+function toggleVoiceMode() {
+    console.log('🎤 Voice mode toggled. Voice enabled:', voiceEnabled, 'Is listening:', isListening);
+    
+    if (!voiceEnabled) {
+        showVoiceFallback();
+        return;
+    }
+    
+    if (isListening) {
+        stopVoiceRecognition();
+    } else {
+        startVoiceRecognition();
+    }
+}
+
+// Start Voice Recognition
+function startVoiceRecognition() {
+    if (!recognition) {
+        console.error('Recognition not initialized');
+        return;
+    }
+    
+    if (isSpeaking) {
+        console.log('Cannot start: AI is currently speaking');
+        return;
+    }
+    
+    // Request microphone permission first
+    navigator.mediaDevices.getUserMedia({ audio: true })
+        .then(stream => {
+            console.log('✅ Microphone permission granted');
+            stream.getTracks().forEach(track => track.stop());
+            
+            try {
+                recognition.start();
+                isVoiceMode = true;
+                document.getElementById('textInputGroup').style.opacity = '0.5';
+                document.getElementById('userInput').disabled = true;
+                document.getElementById('callSimulation').classList.add('active');
+            } catch (error) {
+                console.error('Failed to start recognition:', error);
+                handleVoiceError('start-failed');
+            }
+        })
+        .catch(err => {
+            console.error('Microphone permission error:', err);
+            if (err.name === 'NotAllowedError') {
+                handleVoiceError('not-allowed');
+            } else if (err.name === 'NotFoundError') {
+                handleVoiceError('audio-capture');
+            } else {
+                handleVoiceError('permission-error');
+            }
+        });
 }
 
 // Stop Voice Recognition
-function stopListening() {
+function stopVoiceRecognition() {
     if (recognition && isListening) {
-        recognition.stop();
+        try {
+            recognition.stop();
+        } catch (error) {
+            console.error('Error stopping recognition:', error);
+        }
     }
+    
     isVoiceMode = false;
     document.getElementById('textInputGroup').style.opacity = '1';
     document.getElementById('userInput').disabled = false;
-    document.getElementById('voiceTranscript').style.display = 'none';
+    document.getElementById('callSimulation').classList.remove('active');
 }
 
-// Handle Speech Recognition Result
-function handleSpeechResult(transcript) {
-    document.getElementById('voiceTranscript').style.display = 'none';
-    
-    if (transcript.trim().length > 0) {
-        // Display user message in chat
-        const chatWindow = document.getElementById('chatWindow');
-        const userDiv = document.createElement('div');
-        userDiv.className = 'user-msg';
-        userDiv.textContent = `You (Voice): ${transcript}`;
-        chatWindow.appendChild(userDiv);
-        
-        // Update status
-        updateVoiceStatus('processing', 'Processing...');
-        updateCallStatus('🤖 AI is thinking...');
-        
-        // Send to backend
-        sendMessageToBackend(transcript);
-    } else {
-        updateVoiceStatus('', 'Ready');
-        updateCallStatus('🤖 AI Agent Ready');
+// Text-to-Speech Function - Female Voice
+function speakResponse(text) {
+    if (!('speechSynthesis' in window)) {
+        console.warn('Speech synthesis not supported');
+        return;
     }
     
-    chatWindow.scrollTop = chatWindow.scrollHeight;
+    // Cancel any ongoing speech
+    window.speechSynthesis.cancel();
+    
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.rate = 0.9;
+    utterance.pitch = 1.1;  // Slightly higher pitch for female-like voice
+    utterance.volume = 1;
+    utterance.lang = 'en-US';
+    
+    // Get available voices and select a female one
+    function getFemaleVoice() {
+        const voices = window.speechSynthesis.getVoices();
+        
+        // Look for female voice names (common patterns)
+        const femaleVoicePatterns = [
+            'female', 'woman', 'girl', 'samantha', 'victoria', 
+            'karen', 'moira', 'tessa', 'serena', 'zira',
+            'Google UK English Female', 'Microsoft Zira', 
+            'Microsoft Hazel', 'Google US English'
+        ];
+        
+        // Try to find a female voice
+        for (let pattern of femaleVoicePatterns) {
+            const voice = voices.find(v => 
+                v.name.toLowerCase().includes(pattern.toLowerCase()) ||
+                v.name.includes('Female')
+            );
+            if (voice) {
+                console.log(`✅ Selected female voice: ${voice.name}`);
+                return voice;
+            }
+        }
+        
+        // Fallback to any English voice
+        const englishVoice = voices.find(v => v.lang.startsWith('en'));
+        if (englishVoice) {
+            console.log(`ℹ️ Using voice: ${englishVoice.name}`);
+            return englishVoice;
+        }
+        
+        // Default voice
+        return null;
+    }
+    
+    // Set voice if available
+    const selectedVoice = getFemaleVoice();
+    if (selectedVoice) {
+        utterance.voice = selectedVoice;
+    }
+    
+    utterance.onstart = function() {
+        console.log('🔊 AI started speaking');
+        isSpeaking = true;
+        updateVoiceStatus('speaking', 'AI is speaking...');
+        updateCallStatus('🔊 AI is speaking...');
+    };
+    
+    utterance.onend = function() {
+        console.log('🔊 AI finished speaking');
+        isSpeaking = false;
+        updateVoiceStatus('', 'Ready');
+        updateCallStatus('🤖 AI Agent Ready');
+    };
+    
+    utterance.onerror = function(event) {
+        console.error('Speech synthesis error:', event.error);
+        isSpeaking = false;
+        updateVoiceStatus('', 'Ready');
+        updateCallStatus('🤖 AI Agent Ready');
+    };
+    
+    try {
+        // Ensure voices are loaded before speaking
+        if (window.speechSynthesis.getVoices().length === 0) {
+            window.speechSynthesis.onvoiceschanged = function() {
+                const voice = getFemaleVoice();
+                if (voice) utterance.voice = voice;
+                window.speechSynthesis.speak(utterance);
+            };
+        } else {
+            window.speechSynthesis.speak(utterance);
+        }
+    } catch (error) {
+        console.error('Failed to speak:', error);
+    }
+}
+
+// Update Voice Status
+function updateVoiceStatus(statusClass, message) {
+    const statusElement = document.getElementById('voiceStatus');
+    statusElement.className = 'voice-status';
+    
+    if (statusClass && message) {
+        statusElement.classList.add(statusClass);
+        statusElement.textContent = message;
+        statusElement.style.display = 'inline-block';
+    } else {
+        statusElement.style.display = 'none';
+    }
+}
+
+// Update Call Status
+function updateCallStatus(message) {
+    const callStatus = document.getElementById('callStatus');
+    if (callStatus) {
+        callStatus.textContent = message;
+    }
 }
 
 // Send Message to Backend (Enhanced for Voice)
@@ -209,111 +438,7 @@ async function sendMessageToBackend(message) {
     }
 }
 
-// Text-to-Speech Function
-function speakResponse(text) {
-    if ('speechSynthesis' in window) {
-        // Cancel any ongoing speech
-        window.speechSynthesis.cancel();
-        
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.rate = 0.9;
-        utterance.pitch = 1;
-        utterance.volume = 1;
-        
-        utterance.onstart = function() {
-            isSpeaking = true;
-            updateVoiceStatus('speaking', 'AI is speaking...');
-            updateCallStatus('🔊 AI is speaking...');
-        };
-        
-        utterance.onend = function() {
-            isSpeaking = false;
-            updateVoiceStatus('', 'Ready');
-            updateCallStatus('🤖 AI Agent Ready');
-        };
-        
-        utterance.onerror = function(event) {
-            console.error('Speech synthesis error:', event.error);
-            isSpeaking = false;
-            updateVoiceStatus('', 'Ready');
-            updateCallStatus('🤖 AI Agent Ready');
-        };
-        
-        window.speechSynthesis.speak(utterance);
-    } else {
-        console.warn('Speech synthesis not supported');
-    }
-}
-
-// Update Voice Status
-function updateVoiceStatus(statusClass, message) {
-    const statusElement = document.getElementById('voiceStatus');
-    statusElement.className = 'voice-status';
-    
-    if (statusClass) {
-        statusElement.classList.add(statusClass);
-        statusElement.textContent = message;
-        statusElement.style.display = 'inline-block';
-    } else {
-        statusElement.style.display = 'none';
-    }
-}
-
-// Update Call Status
-function updateCallStatus(message) {
-    document.getElementById('callStatus').textContent = message;
-}
-
-// Handle Voice Errors
-function handleVoiceError(error) {
-    let errorMessage = 'Voice recognition failed';
-    
-    switch(error) {
-        case 'no-speech':
-            errorMessage = 'No speech detected. Please try again.';
-            break;
-        case 'audio-capture':
-            errorMessage = 'Microphone not available. Please check permissions.';
-            break;
-        case 'not-allowed':
-            errorMessage = 'Microphone access denied. Please allow microphone access.';
-            break;
-        case 'network':
-            errorMessage = 'Network error. Please check your connection.';
-            break;
-        default:
-            errorMessage = `Voice error: ${error}`;
-    }
-    
-    showVoiceError(errorMessage);
-}
-
-// Show Voice Error
-function showVoiceError(message) {
-    updateVoiceStatus('error', 'Voice Error');
-    updateCallStatus(`❌ ${message}`);
-    
-    // Display error in chat
-    const chatWindow = document.getElementById('chatWindow');
-    const errorDiv = document.createElement('div');
-    errorDiv.className = 'bot-msg';
-    errorDiv.style.color = '#dc3545';
-    errorDiv.textContent = `Voice Error: ${message}`;
-    chatWindow.appendChild(errorDiv);
-    chatWindow.scrollTop = chatWindow.scrollHeight;
-    
-    // Reset after 3 seconds
-    setTimeout(() => {
-        updateVoiceStatus('', 'Ready');
-        updateCallStatus('🤖 AI Agent Ready');
-    }, 3000);
-}
-
-// Initialize on page load
-window.addEventListener('load', function() {
-    initializeVoiceRecognition();
-});
-
+// Regular text message function
 async function sendMessage() {
     const input = document.getElementById('userInput');
     const message = input.value.trim();
@@ -340,6 +465,7 @@ async function sendMessage() {
     await sendMessageToBackend(message);
 }
 
+// View Stats
 async function viewStats() {
     try {
         const response = await fetch('/stats');
@@ -366,8 +492,30 @@ async function viewStats() {
     }
 }
 
+// Handle Enter key
 function handleKeyPress(event) {
     if (event.key === 'Enter') {
         sendMessage();
     }
 }
+
+// Initialize on page load
+window.addEventListener('load', function() {
+    console.log('🚀 SupportAI Voice Chat loading...');
+    
+    // Debug: Check if button exists
+    const micBtn = document.getElementById('micBtn');
+    if (micBtn) {
+        console.log('✅ Microphone button found');
+        
+        // Add click listener as backup
+        micBtn.addEventListener('click', function() {
+            console.log('🎤 Microphone button clicked!');
+            toggleVoiceMode();
+        });
+    } else {
+        console.error('❌ Microphone button not found!');
+    }
+    
+    initializeVoiceRecognition();
+});

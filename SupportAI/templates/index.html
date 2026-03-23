@@ -162,12 +162,15 @@
         </div>
 
         <div class="voice-controls">
-            <button class="mic-btn" id="micBtn" onclick="toggleVoiceMode()" title="Start Voice Chat">
+            <button class="mic-btn" id="micBtn" onclick="toggleVoiceMode()" title="Start Voice Chat" style="cursor: pointer; z-index: 1000;">
                 🎤
             </button>
             <div class="voice-status" id="voiceStatus" style="display:none;">Ready</div>
             <button class="voice-toggle" id="voiceToggle" onclick="toggleVoiceMode()" style="display:none;">
                 Enable Voice Mode
+            </button>
+            <button onclick="console.log('Test button clicked'); alert('Button clicks are working!');" style="padding: 5px 10px; font-size: 12px; background: #28a745; color: white; border: none; border-radius: 3px;">
+                Test Click
             </button>
         </div>
         
