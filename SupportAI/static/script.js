@@ -1,19 +1,39 @@
-// Voice Mode Variables
+// ============================================
+// SupportAI Production Version - Voice Call & Enhanced Features
+// ============================================
+
+// Global Variables
 let recognition = null;
 let isVoiceMode = false;
 let isListening = false;
 let isSpeaking = false;
 let voiceEnabled = false;
+let isCallActive = false;
+let callTimer = null;
+let callDuration = 0;
+let conversationHistory = [];
+let sessionId = Date.now().toString();
+let silenceTimer = null;
 
-// Initialize Voice Recognition
+// Configuration
+const CONFIG = {
+    silenceTimeout: 5000,
+    speechDelay: 500,
+    autoSpeak: true,
+    continuousMode: false
+};
+
+// ============================================
+// Voice Call Mode - Persistent Call Experience
+// ============================================
+
 function initializeVoiceRecognition() {
-    console.log('Initializing voice recognition...');
+    console.log('🚀 Initializing SupportAI Voice System...');
     
-    // Cross-browser support check
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     
     if (!SpeechRecognition) {
-        console.warn('Speech recognition not supported in this browser');
+        console.warn('❌ Speech recognition not supported');
         showVoiceFallback();
         return;
     }
@@ -22,152 +42,195 @@ function initializeVoiceRecognition() {
         recognition = new SpeechRecognition();
         setupRecognitionEvents();
         voiceEnabled = true;
-        console.log('✅ Voice recognition initialized successfully');
-        
-        // Show ready status
-        updateCallStatus('🤖 AI Agent Ready');
-        document.getElementById('voiceToggle').style.display = 'inline-block';
-        
+        console.log('✅ Voice system initialized');
+        updateCallStatus('🤖 AI Agent Ready - Click "Start Call" to begin');
     } catch (error) {
-        console.error('Failed to initialize speech recognition:', error);
+        console.error('❌ Voice initialization failed:', error);
         showVoiceFallback();
     }
 }
 
-// Setup Recognition Events
 function setupRecognitionEvents() {
-    recognition.continuous = false;
+    recognition.continuous = true;
     recognition.interimResults = true;
     recognition.lang = 'en-US';
     recognition.maxAlternatives = 1;
     
     recognition.onstart = function() {
-        console.log('🎤 Speech recognition started');
+        console.log('🎤 Listening started');
         isListening = true;
         updateVoiceStatus('listening', 'Listening...');
         updateCallStatus('🎤 Listening... Speak now');
-        document.getElementById('micBtn').classList.add('active');
+        const micBtn = document.getElementById('micBtn');
+        if (micBtn) micBtn.classList.add('active');
+        const callBtn = document.getElementById('callBtn');
+        if (callBtn) callBtn.classList.add('active');
+        startSilenceTimer();
     };
     
     recognition.onresult = function(event) {
-        console.log('📝 Speech recognition result:', event);
+        resetSilenceTimer();
+        let finalTranscript = '';
+        let interimTranscript = '';
         
-        const result = event.results[event.resultIndex];
-        if (!result) return;
-        
-        const transcript = result[0].transcript;
-        const confidence = Math.round((result[0].confidence || 0) * 100);
-        
-        console.log(`Transcript: "${transcript}" (Confidence: ${confidence}%)`);
-        
-        // Show interim results
-        if (!result.isFinal) {
-            document.getElementById('voiceTranscript').textContent = `Hearing: "${transcript}"`;
-            document.getElementById('voiceTranscript').style.display = 'block';
-            return;
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+            const transcript = event.results[i][0].transcript;
+            if (event.results[i].isFinal) {
+                finalTranscript += transcript;
+            } else {
+                interimTranscript += transcript;
+            }
         }
         
-        // Handle final result
-        handleSpeechResult(transcript);
+        if (interimTranscript) {
+            showInterimTranscript(interimTranscript);
+        }
+        
+        if (finalTranscript.trim()) {
+            console.log('✅ Final transcript:', finalTranscript);
+            handleSpeechResult(finalTranscript);
+        }
     };
     
     recognition.onerror = function(event) {
-        console.error('❌ Speech recognition error:', event.error);
-        handleVoiceError(event.error);
+        console.error('❌ Speech error:', event.error);
+        if (event.error === 'no-speech') {
+            console.log('🔇 No speech detected, continuing...');
+            if (isCallActive) restartListening();
+        } else if (event.error !== 'aborted') {
+            handleVoiceError(event.error);
+        }
     };
     
     recognition.onend = function() {
-        console.log('🔇 Speech recognition ended');
+        console.log('🔇 Recognition ended');
         isListening = false;
-        document.getElementById('micBtn').classList.remove('active');
-        document.getElementById('voiceTranscript').style.display = 'none';
-        
-        if (!isSpeaking) {
+        const micBtn = document.getElementById('micBtn');
+        if (micBtn) micBtn.classList.remove('active');
+        if (isCallActive && !isSpeaking) {
+            setTimeout(() => restartListening(), 500);
+        } else if (!isCallActive) {
             updateVoiceStatus('', 'Ready');
-            updateCallStatus('🤖 AI Agent Ready');
+            updateCallStatus('🤖 Call Ended');
         }
     };
 }
 
-// Handle Speech Result
-function handleSpeechResult(transcript) {
-    if (!transcript || transcript.trim().length === 0) {
-        console.log('Empty transcript received');
-        return;
-    }
-    
-    console.log('✅ Final speech result:', transcript);
-    
-    // Hide interim transcript
-    document.getElementById('voiceTranscript').style.display = 'none';
-    
-    // Update status
-    updateVoiceStatus('processing', 'Processing...');
-    updateCallStatus('🤖 AI is thinking...');
-    
-    // Display user message in chat
-    const chatWindow = document.getElementById('chatWindow');
-    const userDiv = document.createElement('div');
-    userDiv.className = 'user-msg';
-    userDiv.textContent = `You (Voice): ${transcript}`;
-    chatWindow.appendChild(userDiv);
-    
-    // Send to backend
-    sendMessageToBackend(transcript);
-    
-    // Scroll to bottom
-    chatWindow.scrollTop = chatWindow.scrollHeight;
+function startSilenceTimer() {
+    clearTimeout(silenceTimer);
+    silenceTimer = setTimeout(() => {
+        if (isListening && isCallActive && !isSpeaking) {
+            console.log('⏰ Silence detected, auto-restarting...');
+            restartListening();
+        }
+    }, CONFIG.silenceTimeout);
 }
 
-// Handle Voice Errors
-function handleVoiceError(error) {
-    let errorMessage = 'Voice recognition failed';
-    let userMessage = '';
+function resetSilenceTimer() {
+    clearTimeout(silenceTimer);
+    startSilenceTimer();
+}
+
+function restartListening() {
+    if (!recognition || !isCallActive) return;
+    try {
+        recognition.stop();
+        setTimeout(() => {
+            if (isCallActive && !isSpeaking) recognition.start();
+        }, 300);
+    } catch (error) {
+        console.error('Restart error:', error);
+    }
+}
+
+function showInterimTranscript(text) {
+    const transcriptDiv = document.getElementById('voiceTranscript');
+    if (transcriptDiv) {
+        transcriptDiv.textContent = `Hearing: "${text}"`;
+        transcriptDiv.style.display = 'block';
+    }
+}
+
+// ============================================
+// Call Mode Controls
+// ============================================
+
+function toggleCallMode() {
+    if (!voiceEnabled) {
+        alert('Voice recognition not available. Please use Chrome.');
+        return;
+    }
+    if (isCallActive) endCall();
+    else startCall();
+}
+
+function startCall() {
+    console.log('📞 Starting call...');
+    isCallActive = true;
+    callDuration = 0;
     
-    switch(error) {
-        case 'no-speech':
-            errorMessage = 'No speech detected';
-            userMessage = '🔇 No speech detected. Please speak louder or check your microphone.';
-            break;
-        case 'not-allowed':
-            errorMessage = 'Microphone permission denied';
-            userMessage = '❌ Microphone access denied. Please click the 🔒 icon in your browser and allow microphone access.';
-            break;
-        case 'audio-capture':
-            errorMessage = 'No microphone found';
-            userMessage = '❌ No microphone found. Please connect a microphone.';
-            break;
-        case 'network':
-            errorMessage = 'Network error';
-            userMessage = '❌ Network error. Please check your internet connection.';
-            break;
-        case 'service-not-allowed':
-            errorMessage = 'Speech recognition service not allowed';
-            userMessage = '❌ Speech recognition service is not available. Please try text mode.';
-            break;
-        default:
-            errorMessage = `Speech recognition error: ${error}`;
-            userMessage = `❌ Voice error: ${error}. Please try again.`;
+    const callBtn = document.getElementById('callBtn');
+    if (callBtn) {
+        callBtn.innerHTML = '🔴 End Call';
+        callBtn.classList.add('active');
+    }
+    const callSim = document.getElementById('callSimulation');
+    if (callSim) callSim.classList.add('active');
+    updateCallStatus('📞 Call Active - Speak now');
+    
+    startCallTimer();
+    
+    navigator.mediaDevices.getUserMedia({ audio: true })
+        .then(stream => {
+            stream.getTracks().forEach(track => track.stop());
+            try { recognition.start(); }
+            catch (e) { console.error('Start error:', e); }
+        })
+        .catch(err => {
+            alert('Please allow microphone access.');
+            endCall();
+        });
+}
+
+function endCall() {
+    console.log('📞 Ending call...');
+    isCallActive = false;
+    
+    if (recognition && isListening) {
+        try { recognition.stop(); } catch (e) {}
     }
     
-    console.error('Voice Error:', errorMessage);
-    updateVoiceStatus('error', 'Voice Error');
-    updateCallStatus(`❌ ${errorMessage}`);
+    clearInterval(callTimer);
+    clearTimeout(silenceTimer);
     
-    // Show error in chat
-    const chatWindow = document.getElementById('chatWindow');
-    const errorDiv = document.createElement('div');
-    errorDiv.className = 'bot-msg';
-    errorDiv.style.color = '#dc3545';
-    errorDiv.textContent = userMessage;
-    chatWindow.appendChild(errorDiv);
-    chatWindow.scrollTop = chatWindow.scrollHeight;
+    const callBtn = document.getElementById('callBtn');
+    if (callBtn) {
+        callBtn.innerHTML = '📞 Start Call';
+        callBtn.classList.remove('active');
+    }
+    const callSim = document.getElementById('callSimulation');
+    if (callSim) callSim.classList.remove('active');
+    const voiceTrans = document.getElementById('voiceTranscript');
+    if (voiceTrans) voiceTrans.style.display = 'none';
     
-    // Reset status after delay
-    setTimeout(() => {
-        updateVoiceStatus('', 'Ready');
-        updateCallStatus('🤖 AI Agent Ready');
-    }, 3000);
+    updateCallStatus(`🤖 Call Ended (${formatDuration(callDuration)})`);
+    updateVoiceStatus('', 'Ready');
+    
+    if (conversationHistory.length > 0) showSaveChatDialog();
+}
+
+function startCallTimer() {
+    const timerDiv = document.getElementById('callTimer');
+    callTimer = setInterval(() => {
+        callDuration++;
+        if (timerDiv) timerDiv.textContent = formatDuration(callDuration);
+    }, 1000);
+}
+
+function formatDuration(seconds) {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
 }
 
 // Show Voice Fallback
@@ -261,261 +324,518 @@ function stopVoiceRecognition() {
     document.getElementById('callSimulation').classList.remove('active');
 }
 
-// Text-to-Speech Function - Female Voice
-function speakResponse(text) {
-    if (!('speechSynthesis' in window)) {
-        console.warn('Speech synthesis not supported');
-        return;
-    }
-    
-    // Cancel any ongoing speech
-    window.speechSynthesis.cancel();
+// ============================================
+// Speech Handling & TTS (Enhanced)
+// ============================================
+
+function handleSpeechResult(transcript) {
+    if (!transcript || transcript.trim().length === 0) return;
+    const voiceTrans = document.getElementById('voiceTranscript');
+    if (voiceTrans) voiceTrans.style.display = 'none';
+    updateVoiceStatus('processing', 'Processing...');
+    updateCallStatus('🤖 AI is thinking...');
+    addToConversation('You', transcript);
+    displayMessage('You', transcript, 'user-msg');
+    sendMessageToBackend(transcript);
+}
+
+function handleVoiceError(error) {
+    const messages = {
+        'not-allowed': '❌ Microphone access denied',
+        'audio-capture': '❌ No microphone found',
+        'network': '❌ Network error'
+    };
+    const msg = messages[error] || `❌ Error: ${error}`;
+    updateCallStatus(msg);
+    displayMessage('System', msg, 'bot-msg error');
+}
+
+function speakResponse(text, priority = false) {
+    if (!CONFIG.autoSpeak || !('speechSynthesis' in window)) return;
+    if (priority || isSpeaking) window.speechSynthesis.cancel();
     
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.rate = 0.9;
-    utterance.pitch = 1.1;  // Slightly higher pitch for female-like voice
+    utterance.pitch = 1.1;
     utterance.volume = 1;
     utterance.lang = 'en-US';
     
-    // Get available voices and select a female one
-    function getFemaleVoice() {
-        const voices = window.speechSynthesis.getVoices();
-        
-        // Look for female voice names (common patterns)
-        const femaleVoicePatterns = [
-            'female', 'woman', 'girl', 'samantha', 'victoria', 
-            'karen', 'moira', 'tessa', 'serena', 'zira',
-            'Google UK English Female', 'Microsoft Zira', 
-            'Microsoft Hazel', 'Google US English'
-        ];
-        
-        // Try to find a female voice
-        for (let pattern of femaleVoicePatterns) {
-            const voice = voices.find(v => 
-                v.name.toLowerCase().includes(pattern.toLowerCase()) ||
-                v.name.includes('Female')
-            );
-            if (voice) {
-                console.log(`✅ Selected female voice: ${voice.name}`);
-                return voice;
-            }
-        }
-        
-        // Fallback to any English voice
-        const englishVoice = voices.find(v => v.lang.startsWith('en'));
-        if (englishVoice) {
-            console.log(`ℹ️ Using voice: ${englishVoice.name}`);
-            return englishVoice;
-        }
-        
-        // Default voice
-        return null;
-    }
+    const voices = window.speechSynthesis.getVoices();
+    const femaleVoices = ['Google UK English Female', 'Microsoft Zira', 'Samantha', 'Victoria'];
+    const voice = voices.find(v => femaleVoices.some(fv => v.name.includes(fv)));
+    if (voice) utterance.voice = voice;
     
-    // Set voice if available
-    const selectedVoice = getFemaleVoice();
-    if (selectedVoice) {
-        utterance.voice = selectedVoice;
-    }
-    
-    utterance.onstart = function() {
-        console.log('🔊 AI started speaking');
+    utterance.onstart = () => {
         isSpeaking = true;
-        updateVoiceStatus('speaking', 'AI is speaking...');
+        updateVoiceStatus('speaking', 'AI Speaking...');
         updateCallStatus('🔊 AI is speaking...');
     };
     
-    utterance.onend = function() {
-        console.log('🔊 AI finished speaking');
+    utterance.onend = () => {
         isSpeaking = false;
         updateVoiceStatus('', 'Ready');
-        updateCallStatus('🤖 AI Agent Ready');
-    };
-    
-    utterance.onerror = function(event) {
-        console.error('Speech synthesis error:', event.error);
-        isSpeaking = false;
-        updateVoiceStatus('', 'Ready');
-        updateCallStatus('🤖 AI Agent Ready');
-    };
-    
-    try {
-        // Ensure voices are loaded before speaking
-        if (window.speechSynthesis.getVoices().length === 0) {
-            window.speechSynthesis.onvoiceschanged = function() {
-                const voice = getFemaleVoice();
-                if (voice) utterance.voice = voice;
-                window.speechSynthesis.speak(utterance);
-            };
+        if (isCallActive) {
+            updateCallStatus('🎤 Listening... Speak now');
+            setTimeout(() => restartListening(), 300);
         } else {
-            window.speechSynthesis.speak(utterance);
+            updateCallStatus('🤖 AI Agent Ready');
         }
-    } catch (error) {
-        console.error('Failed to speak:', error);
-    }
-}
-
-// Update Voice Status
-function updateVoiceStatus(statusClass, message) {
-    const statusElement = document.getElementById('voiceStatus');
-    statusElement.className = 'voice-status';
+    };
     
-    if (statusClass && message) {
-        statusElement.classList.add(statusClass);
-        statusElement.textContent = message;
-        statusElement.style.display = 'inline-block';
-    } else {
-        statusElement.style.display = 'none';
-    }
+    setTimeout(() => window.speechSynthesis.speak(utterance), CONFIG.speechDelay);
 }
 
-// Update Call Status
-function updateCallStatus(message) {
-    const callStatus = document.getElementById('callStatus');
-    if (callStatus) {
-        callStatus.textContent = message;
-    }
-}
+// ============================================
+// Backend Communication (Enhanced)
+// ============================================
 
-// Send Message to Backend (Enhanced for Voice)
 async function sendMessageToBackend(message) {
     try {
         const response = await fetch('/chat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ message })
+            body: JSON.stringify({ 
+                message,
+                conversation_history: conversationHistory,
+                session_id: sessionId
+            })
         });
 
         const data = await response.json();
-
-        // Display bot response
-        const chatWindow = document.getElementById('chatWindow');
-        const botDiv = document.createElement('div');
-        botDiv.className = 'bot-msg';
-        botDiv.textContent = `SupportAI: ${data.response}`;
-        chatWindow.appendChild(botDiv);
         
-        // Update AI Analysis Breakdown
-        document.getElementById('aiDetails').style.display = 'block';
-        document.getElementById('resCategory').textContent = data.category;
-        document.getElementById('resSentiment').textContent = data.sentiment;
-        document.getElementById('resConfidence').textContent = data.confidence;
-        document.getElementById('resEscalation').textContent = data.escalation;
-        
-        // Handle new fields
-        if (data.escalation_level) {
-            document.getElementById('resEscalationLevel').textContent = data.escalation_level;
-        }
-        if (data.decision_trace) {
-            document.getElementById('resDecisionTrace').textContent = data.decision_trace;
+        if (data.source === 'knowledge_base') {
+            console.log('📚 Answer from knowledge base');
         }
         
-        const escalation = document.getElementById('resEscalation');
-        escalation.textContent = data.escalation;
-        escalation.className = data.escalation === 'Yes' ? 'escalation-yes' : 'escalation-no';
-
-        // Speak response if in voice mode
-        if (isVoiceMode || voiceEnabled) {
-            speakResponse(data.response);
-        }
-
-        // Scroll to bottom
-        chatWindow.scrollTop = chatWindow.scrollHeight;
+        displayMessage('SupportAI', data.response, 'bot-msg');
+        addToConversation('SupportAI', data.response);
+        updateAnalysisDisplay(data);
+        speakResponse(data.response, true);
         
-        // Update call status
-        updateCallStatus('🤖 AI Agent Ready');
-        updateVoiceStatus('', 'Ready');
-
+        if (data.escalation === 'Yes') {
+            showEscalationDialog(data);
+        }
+        
+        return data;
     } catch (error) {
-        console.error('Error fetching chat response:', error);
-        const errorDiv = document.createElement('div');
-        errorDiv.className = 'bot-msg';
-        errorDiv.textContent = 'Error: Could not reach the server.';
-        document.getElementById('chatWindow').appendChild(errorDiv);
-        
-        updateVoiceStatus('error', 'Connection Error');
-        updateCallStatus('❌ Connection Error');
+        console.error('❌ Backend error:', error);
+        displayMessage('System', 'Error connecting to server.', 'bot-msg error');
     }
 }
 
-// Regular text message function
+function addToConversation(sender, text) {
+    conversationHistory.push({
+        sender, text,
+        time: new Date().toLocaleTimeString()
+    });
+}
+
+function displayMessage(sender, text, className) {
+    const chatWindow = document.getElementById('chatWindow');
+    if (!chatWindow) return;
+    const div = document.createElement('div');
+    div.className = className;
+    div.innerHTML = `<strong>${sender}:</strong> ${text}`;
+    chatWindow.appendChild(div);
+    chatWindow.scrollTop = chatWindow.scrollHeight;
+}
+
+function updateAnalysisDisplay(data) {
+    const aiDetails = document.getElementById('aiDetails');
+    if (aiDetails) {
+        aiDetails.style.display = 'block';
+        
+        // Display summary at the top if available
+        const summaryDiv = document.getElementById('resSummary');
+        if (summaryDiv) summaryDiv.textContent = data.summary || 'N/A';
+        
+        // Update existing fields
+        document.getElementById('resCategory').textContent = data.category || 'N/A';
+        document.getElementById('resService').textContent = data.service || 'N/A';
+        document.getElementById('resSentiment').textContent = data.sentiment || 'N/A';
+        document.getElementById('resConfidence').textContent = (data.confidence || 0) + '%';
+        document.getElementById('resEscalation').textContent = data.escalation || 'No';
+        document.getElementById('resDecisionTrace').textContent = data.decision_trace || 'N/A';
+        
+        // Display new fields
+        const resConfidenceReason = document.getElementById('resConfidenceReason');
+        if (resConfidenceReason) resConfidenceReason.textContent = data.confidence_reason || 'N/A';
+        
+        const resResponseTime = document.getElementById('resResponseTime');
+        if (resResponseTime) resResponseTime.textContent = data.response_time || 'N/A';
+        
+        const resEscalationPriority = document.getElementById('resEscalationPriority');
+        if (resEscalationPriority) {
+            resEscalationPriority.textContent = data.escalation_priority || 'Low';
+            // Highlight if High priority
+            resEscalationPriority.className = data.escalation_priority === 'High' ? 'priority-high' : 
+                                              data.escalation_priority === 'Medium' ? 'priority-medium' : 'priority-low';
+        }
+        
+        // Display suggested actions as bullet points
+        const resSuggestedActions = document.getElementById('resSuggestedActions');
+        if (resSuggestedActions && data.suggested_actions) {
+            resSuggestedActions.innerHTML = data.suggested_actions
+                .map(action => `<li>${action}</li>`)
+                .join('');
+        }
+        
+        const resService = document.getElementById('resService');
+        if (resService) resService.textContent = data.service || 'N/A';
+    }
+}
+
+// ============================================
+// Escalation Dialog
+// ============================================
+
+function showEscalationDialog(data) {
+    let modal = document.getElementById('escalationModal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'escalationModal';
+        modal.className = 'modal';
+        modal.innerHTML = `
+            <div class="modal-content">
+                <h3>⚠️ Escalation Required</h3>
+                <p>This issue requires human agent attention.</p>
+                <div class="escalation-form">
+                    <label>Contact Method:</label>
+                    <select id="escalationType">
+                        <option value="email">Email</option>
+                        <option value="phone">Phone</option>
+                    </select>
+                    <input type="text" id="escalationContact" placeholder="Enter email or phone" />
+                    <button onclick="submitEscalation()">Submit Escalation</button>
+                    <button onclick="closeEscalationModal()">Cancel</button>
+                </div>
+                <div id="escalationResult"></div>
+            </div>`;
+        document.body.appendChild(modal);
+    }
+    modal.style.display = 'block';
+    modal.dataset.category = data.category;
+    modal.dataset.sentiment = data.sentiment;
+    modal.dataset.issue = data.issue;
+}
+
+function closeEscalationModal() {
+    const modal = document.getElementById('escalationModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
+function updateContactPlaceholder() {
+    const typeSelect = document.getElementById('escalationType');
+    const contactInput = document.getElementById('escalationContact');
+    
+    if (!typeSelect || !contactInput) {
+        console.error('Contact form elements not found');
+        return;
+    }
+    
+    const type = typeSelect.value;
+    
+    if (type === 'phone') {
+        contactInput.placeholder = 'Enter phone number with country code (e.g., +1234567890)';
+    } else {
+        contactInput.placeholder = 'Enter your email address';
+    }
+}
+
+function validatePhoneNumber(phone) {
+    // Remove all non-digit characters
+    const cleanPhone = phone.replace(/\D/g, '');
+    
+    // Check if it's a valid phone number (10-15 digits)
+    return cleanPhone.length >= 10 && cleanPhone.length <= 15;
+}
+
+async function submitEscalation() {
+    const modal = document.getElementById('escalationModal');
+    const nameInput = document.getElementById('escalationName');
+    const typeSelect = document.getElementById('escalationType');
+    const contactInput = document.getElementById('escalationContact');
+    
+    if (!modal || !nameInput || !typeSelect || !contactInput) {
+        console.error('Escalation form elements not found');
+        alert('Form error. Please refresh the page and try again.');
+        return;
+    }
+    
+    const name = nameInput.value.trim();
+    const type = typeSelect.value;
+    const contact = contactInput.value.trim();
+    
+    if (!name) { 
+        alert('Please enter your full name'); 
+        return; 
+    }
+    
+    if (!contact) { 
+        alert('Please enter contact information'); 
+        return; 
+    }
+    
+    // Validate contact based on type
+    if (type === 'email') {
+        if (!contact.includes('@') || !contact.includes('.')) {
+            alert('Please enter a valid email address');
+            return;
+        }
+    } else if (type === 'phone') {
+        if (!validatePhoneNumber(contact)) {
+            alert('Please enter a valid phone number with country code (e.g., +1234567890)');
+            return;
+        }
+    }
+    
+    // Get the last message for query
+    const lastMessage = conversationHistory[conversationHistory.length - 1];
+    const queryText = lastMessage ? lastMessage.text : '';
+    
+    try {
+        const response = await fetch('/escalate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                query: queryText,
+                category: modal.dataset.category,
+                sentiment: modal.dataset.sentiment,
+                issue: modal.dataset.issue,
+                conversation: conversationHistory,
+                user_name: name,
+                contact_type: type,
+                contact_value: contact
+            })
+        });
+        
+        const data = await response.json();
+        if (data.success) {
+            let resultHTML = `<div class="success">✅ ${data.message}</div>`;
+            resultHTML += `<div style="margin-top: 10px;"><strong>Ticket ID:</strong> ${data.ticket_id}</div>`;
+            resultHTML += `<div style="margin-top: 5px;"><strong>Name:</strong> ${name}</div>`;
+            resultHTML += `<div style="margin-top: 5px;"><strong>Contact:</strong> ${contact}</div>`;
+            
+            // Add WhatsApp link if available
+            if (data.whatsapp_url) {
+                resultHTML += `<br><a href="${data.whatsapp_url}" target="_blank" class="whatsapp-link">📱 Open WhatsApp to Contact Support</a>`;
+            }
+            
+            const resultElement = document.getElementById('escalationResult');
+            const formElement = document.getElementById('escalationForm');
+            
+            if (resultElement) {
+                resultElement.innerHTML = resultHTML;
+            }
+            
+            if (formElement) {
+                formElement.style.display = 'none';
+            }
+            
+            // Close modal after delay
+            setTimeout(() => {
+                closeEscalationModal();
+            }, 5000);
+        } else {
+            const resultElement = document.getElementById('escalationResult');
+            if (resultElement) {
+                resultElement.innerHTML = `<div class="error">❌ ${data.error || 'Escalation failed'}</div>`;
+            }
+        }
+    } catch (error) {
+        console.error('Escalation error:', error);
+        const resultElement = document.getElementById('escalationResult');
+        if (resultElement) {
+            resultElement.innerHTML = '<div class="error">❌ Failed to create escalation ticket. Please try again.</div>';
+        }
+    }
+}
+
+// ============================================
+// Save Chat Dialog
+// ============================================
+
+function showSaveChatDialog() {
+    let modal = document.getElementById('saveChatModal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'saveChatModal';
+        modal.className = 'modal';
+        modal.innerHTML = `
+            <div class="modal-content">
+                <h3>💾 Save Chat Transcript?</h3>
+                <p>Would you like to save this conversation?</p>
+                <div class="save-options">
+                    <button onclick="saveChat('email')">📧 Email</button>
+                    <button onclick="saveChat('whatsapp')">💬 WhatsApp</button>
+                    <button onclick="closeSaveChatModal()">❌ Skip</button>
+                </div>
+                <div id="saveChatForm" style="display:none;">
+                    <input type="text" id="saveContact" placeholder="Enter email or phone" />
+                    <button onclick="submitSaveChat()">Send</button>
+                </div>
+                <div id="saveChatResult"></div>
+            </div>`;
+        document.body.appendChild(modal);
+    }
+    modal.style.display = 'block';
+    modal.dataset.method = '';
+}
+
+let currentSaveMethod = '';
+
+function saveChat(method) {
+    currentSaveMethod = method;
+    document.getElementById('saveChatForm').style.display = 'block';
+    document.getElementById('saveContact').placeholder = method === 'email' ? 'Enter your email' : 'Enter your phone';
+}
+
+function closeSaveChatModal() {
+    document.getElementById('saveChatModal').style.display = 'none';
+}
+
+async function submitSaveChat() {
+    const contact = document.getElementById('saveContact').value;
+    if (!contact) { 
+        alert('Please enter contact information'); 
+        return; 
+    }
+    
+    try {
+        const response = await fetch('/save-chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                session_id: sessionId,
+                conversation: conversationHistory,
+                method: currentSaveMethod,
+                contact_value: contact
+            })
+        });
+        
+        const data = await response.json();
+        if (data.success) {
+            let resultHTML = `<div class="success">✅ ${data.message}</div>`;
+            
+            if (currentSaveMethod === 'whatsapp' && data.whatsapp_url) {
+                resultHTML += `<br><a href="${data.whatsapp_url}" target="_blank" class="whatsapp-link">📱 Open WhatsApp to Share</a>`;
+            }
+            
+            document.getElementById('saveChatResult').innerHTML = resultHTML;
+            
+            // If email was sent, show confirmation
+            if (currentSaveMethod === 'email') {
+                setTimeout(() => {
+                    alert('Chat transcript sent successfully!');
+                }, 1000);
+            }
+        } else {
+            // Show error message
+            const errorMsg = data.error || 'Failed to save chat';
+            document.getElementById('saveChatResult').innerHTML = `<div class="error">❌ ${errorMsg}</div>`;
+            alert(errorMsg);
+        }
+    } catch (error) {
+        console.error('Save chat error:', error);
+        document.getElementById('saveChatResult').innerHTML = '<div class="error">❌ Failed to save chat. Please try again.</div>';
+        alert('Failed to save chat. Please try again.');
+    }
+}
+
+// ============================================
+// UI Update Functions
+// ============================================
+
+function updateVoiceStatus(statusClass, message) {
+    const el = document.getElementById('voiceStatus');
+    if (el) {
+        el.className = 'voice-status';
+        if (statusClass) {
+            el.classList.add(statusClass);
+            el.textContent = message;
+            el.style.display = 'inline-block';
+        } else {
+            el.style.display = 'none';
+        }
+    }
+}
+
+function updateCallStatus(message) {
+    const el = document.getElementById('callStatus');
+    if (el) el.textContent = message;
+}
+
+function showVoiceFallback() {
+    voiceEnabled = false;
+    const micBtn = document.getElementById('micBtn');
+    if (micBtn) micBtn.style.display = 'none';
+    const callBtn = document.getElementById('callBtn');
+    if (callBtn) callBtn.style.display = 'none';
+    displayMessage('System', 'Voice mode not available. Please type your message.', 'bot-msg');
+}
+
+// ============================================
+// Regular Text Chat
+// ============================================
+
 async function sendMessage() {
     const input = document.getElementById('userInput');
-    const message = input.value.trim();
+    const message = input ? input.value.trim() : '';
     if (!message) return;
 
-    // Cancel any ongoing speech when user types
     if (isSpeaking) {
         window.speechSynthesis.cancel();
         isSpeaking = false;
     }
 
-    // Display user message in chat
-    const chatWindow = document.getElementById('chatWindow');
-    const userDiv = document.createElement('div');
-    userDiv.className = 'user-msg';
-    userDiv.textContent = `You: ${message}`;
-    chatWindow.appendChild(userDiv);
-    
-    // Clear input
+    displayMessage('You', message, 'user-msg');
+    addToConversation('You', message);
     input.value = '';
     input.focus();
-
-    // Send to backend using enhanced function
     await sendMessageToBackend(message);
 }
 
-// View Stats
+function handleKeyPress(event) {
+    if (event.key === 'Enter') sendMessage();
+}
+
 async function viewStats() {
     try {
         const response = await fetch('/stats');
         const data = await response.json();
         const statsBox = document.getElementById('statsBox');
-        
-        statsBox.style.display = 'block';
-        statsBox.innerHTML = `
-            <h3>Session Statistics</h3>
-            <div><strong>Total Queries:</strong> ${data.total_queries}</div>
-            <div><strong>Escalation Count:</strong> ${data.escalation_count}</div>
-            <div><strong>Category Breakdown:</strong><br>
-                <ul>
-                    ${Object.entries(data.category_counts).map(([cat, count]) => `<li>${cat}: ${count}</li>`).join('')}
-                </ul>
-            </div>
-            <div style="margin-top: 10px; font-size: 0.85em; color: #666;">
-                <strong>Voice Mode:</strong> ${voiceEnabled ? 'Available' : 'Not Supported'}<br>
-                <strong>Browser:</strong> ${navigator.userAgent.split(' ')[0]}
-            </div>
-        `;
+        if (statsBox) {
+            statsBox.style.display = 'block';
+            statsBox.innerHTML = `
+                <h3>📊 Statistics</h3>
+                <div>Total Queries: ${data.total_queries}</div>
+                <div>Escalations: ${data.escalation_count}</div>
+                <ul>${Object.entries(data.category_counts).map(([cat, count]) => `<li>${cat}: ${count}</li>`).join('')}</ul>`;
+        }
     } catch (error) {
-        console.error('Error fetching stats:', error);
+        console.error('Stats error:', error);
     }
 }
 
-// Handle Enter key
-function handleKeyPress(event) {
-    if (event.key === 'Enter') {
-        sendMessage();
-    }
-}
+// ============================================
+// Initialization
+// ============================================
 
-// Initialize on page load
 window.addEventListener('load', function() {
-    console.log('🚀 SupportAI Voice Chat loading...');
+    console.log('🚀 SupportAI Production Version Loading...');
+    initializeVoiceRecognition();
     
-    // Debug: Check if button exists
-    const micBtn = document.getElementById('micBtn');
-    if (micBtn) {
-        console.log('✅ Microphone button found');
-        
-        // Add click listener as backup
-        micBtn.addEventListener('click', function() {
-            console.log('🎤 Microphone button clicked!');
-            toggleVoiceMode();
-        });
-    } else {
-        console.error('❌ Microphone button not found!');
+    if ('speechSynthesis' in window) {
+        window.speechSynthesis.getVoices();
+        window.speechSynthesis.onvoiceschanged = () => console.log('🔊 TTS voices loaded');
     }
     
-    initializeVoiceRecognition();
+    const callBtn = document.getElementById('callBtn');
+    if (callBtn) callBtn.addEventListener('click', toggleCallMode);
+    const micBtn = document.getElementById('micBtn');
+    if (micBtn) micBtn.addEventListener('click', toggleVoiceMode);
+    
+    console.log('✅ SupportAI initialized');
 });

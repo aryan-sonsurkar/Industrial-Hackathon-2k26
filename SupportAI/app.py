@@ -1,10 +1,15 @@
 import os
 import json
-import requests
 import time
+import requests
 import re
 from datetime import datetime, timedelta
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, render_template, request, jsonify
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from email.utils import formataddr
+import urllib.parse
 
 app = Flask(__name__)
 
@@ -16,17 +21,78 @@ HISTORY_FILE = os.path.join(BASE_DIR, "data", "history.json")
 MEMORY_FILE = os.path.join(BASE_DIR, "data", "memory.json")
 DATA_DIR = os.path.join(BASE_DIR, "data")
 
-# Ensure data directory exists
+# Email Configuration
+EMAIL_ENABLED = True
+SMTP_SERVER = "smtp.gmail.com"
+SMTP_PORT = 587
+SMTP_USERNAME = "aryansonsurkar87@gmail.com"
+SMTP_PASSWORD = "zkmw kmlu vobm svtx"  # Gmail app password
+FROM_EMAIL = "aryansonsurkar87@gmail.com"
+FROM_NAME = "SupportAI"
+
+# Initialize data directory and files
 os.makedirs(DATA_DIR, exist_ok=True)
+for file in [HISTORY_FILE, MEMORY_FILE]:
+    if not os.path.exists(file):
+        with open(file, 'w') as f:
+            json.dump({}, f)
 
-# Initialize memory and history if not present
-if not os.path.exists(HISTORY_FILE):
-    with open(HISTORY_FILE, 'w') as f:
-        json.dump([], f)
+# Helper Functions
+def send_email_smtp(to_email, subject, body):
+    """Send email using SMTP with proper error handling."""
+    try:
+        # Validate email
+        if not to_email or '@' not in to_email:
+            return False, "Invalid email address"
+        
+        # Create message
+        msg = MIMEText(body)
+        msg['Subject'] = subject
+        msg['From'] = FROM_EMAIL
+        msg['To'] = to_email
 
-if not os.path.exists(MEMORY_FILE):
-    with open(MEMORY_FILE, 'w') as f:
-        json.dump([], f)
+        # Send email using configuration
+        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
+        server.starttls()
+        server.login(SMTP_USERNAME, SMTP_PASSWORD)
+        server.send_message(msg)
+        server.quit()
+        
+        return True, "Email sent successfully"
+        
+    except smtplib.SMTPAuthenticationError:
+        return False, "Email authentication failed. Check SMTP credentials."
+    except smtplib.SMTPRecipientsRefused:
+        return False, "Email server refused recipient address."
+    except smtplib.SMTPServerDisconnected:
+        return False, "Email server disconnected. Please try again."
+    except Exception as e:
+        print("Error:", e)
+        return False, f"Email sending failed: {str(e)}"
+
+def format_chat_transcript(conversation, session_id):
+    """Format chat transcript in clean, readable format."""
+    transcript_lines = [
+        "SUPPORTAI CHAT TRANSCRIPT",
+        f"Session ID: {session_id}",
+        f"Date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+        ""
+    ]
+    
+    for msg in conversation:
+        sender = msg.get("sender", "Unknown")
+        text = msg.get("text", "")
+        timestamp = msg.get("time", "")
+        transcript_lines.append(f"[{timestamp}] {sender}: {text}")
+    
+    transcript_lines.extend([
+        "",
+        "---",
+        "Thank you for using SupportAI!",
+        "For further assistance, contact: aryansonsurkar87@gmail.com"
+    ])
+    
+    return "\n".join(transcript_lines)
 
 def get_memory():
     """Returns the last 3 user queries from memory."""
@@ -383,51 +449,67 @@ def is_off_topic_query(user_input):
 def get_ai_response(user_input):
     """Calls Ollama API and returns enhanced structured response."""
     
-    # Pre-filter off-topic queries
-    if is_off_topic_query(user_input):
-        return {
-            "category": "General",
-            "service": "N/A",
-            "sentiment": "Neutral",
-            "confidence": 95,
-            "issue": "Off-topic query",
-            "response": "I'm designed to assist with customer support queries only. Please ask about our services (Web Development, Mobile Apps, Digital Marketing, Software Solutions), billing, technical issues, or account management.",
-            "escalation": "No",
-            "escalation_level": "low",
-            "decision_trace": "Query identified as off-topic through keyword analysis; no customer support context detected; politely redirected to support topics",
-            "reason": "Off-topic query - not related to customer support"
-        }
-    
     is_repeated = check_repeated_issue(user_input)
     prompt_prefix = "I see you're still facing this issue... " if is_repeated else ""
     
-    prompt = f"""You are an AI Customer Support Assistant for an IT company. Your ONLY purpose is to handle customer support queries related to our services.
+    prompt = f"""You are a professional AI Customer Support Assistant for an IT services company.
 
-The company provides these services:
+OUR SERVICES:
 - Web Development (websites, web apps, frontend, backend)
 - Mobile App Development (iOS, Android, cross-platform)
 - Digital Marketing (SEO, social media, advertising, campaigns)
 - Software Solutions (custom software, systems, integrations, cloud)
 
-STRICT RULES:
-1. ONLY respond to customer support queries related to our services, billing, technical issues, or account problems
-2. If the query is general chat (jokes, weather, personal questions, unrelated topics), respond: "I'm designed to assist with customer support queries only. Please ask about our services, billing, technical issues, or account management."
-3. If the query is unclear or outside our scope, set escalation to "Yes" with reason "Query outside support scope or unclear"
-4. NEVER engage in casual conversation or general knowledge questions
-5. Always maintain professional customer support tone
+BEHAVIOR RULES (VERY IMPORTANT):
+
+1. ALWAYS try to help the user
+- NEVER reject queries
+- NEVER say "I only handle specific queries"
+- If unclear → ask for more details
+
+2. HANDLE COMMON CASES:
+
+👉 Pricing Queries:
+- Do NOT refuse
+- Respond like: "Pricing depends on your requirements such as features, design, and complexity. Our team can provide a customized quote."
+
+👉 Technical Issues:
+- Show empathy
+- Suggest steps
+- Ask for details if needed
+
+👉 Service Queries:
+- Explain services clearly
+- Suggest solutions
+
+👉 Confusion / Mixed Queries:
+- Address both parts logically
+
+3. ESCALATION (CRITICAL):
+If user says: "human", "agent", "not helpful", "talk to someone"
+THEN:
+- Immediately agree
+- Ask for contact info
+- Response: "Sure, I will connect you to a human support agent. Please provide your email or phone number so our team can assist you."
+
+NEVER refuse escalation.
+
+4. TONE:
+- Professional
+- Polite
+- Supportive
+- Business-like
 
 Analyze the user query and respond ONLY in the exact format below. Do NOT add any extra text, greetings, or explanation outside the format.
 
-Category: <one of: Billing, Technical, Account, General>
-Service: <most relevant service from company offerings OR "N/A" if off-topic>
-Sentiment: <one of: Angry, Neutral, Happy>
-Confidence: <integer from 0 to 100>
-Issue: <one line summary of the user's issue OR "Off-topic query" if not support-related>
-Response: <professional support response, or redirection message if off-topic>
-Escalation: <Yes or No>
-Escalation_Level: <low, medium, or high>
-Decision_Trace: <detailed explanation of AI reasoning process>
-Reason: <brief reason for the escalation decision>
+Category: <one of: Technical / Billing / Account / General>
+Service: <Web Development / Mobile App / Marketing / Software>
+Sentiment: <Angry / Neutral / Happy>
+Confidence: <integer from 70 to 95>
+Issue: <short issue description>
+Response: <clear helpful answer>
+Escalation: <Yes/No>
+Reason: <short reason>
 
 User Query: {user_input}"""
 
@@ -462,9 +544,13 @@ User Query: {user_input}"""
             escalation_required = False
             escalation_reasons = []
             
-            if any(word in user_input.lower() for word in ["agent", "not helpful", "human", "manager", "supervisor"]):
+            # CRITICAL: Immediate escalation for human agent requests
+            user_lower = user_input.lower()
+            if any(word in user_lower for word in ["human", "agent", "not helpful", "talk to someone", "manager", "supervisor"]):
                 escalation_required = True
-                escalation_reasons.append("User explicitly requested agent or expressed frustration")
+                escalation_reasons.append("User explicitly requested human agent")
+                # Override response with immediate escalation agreement
+                parsed_data["response"] = "Sure, I will connect you to a human support agent. Please provide your email or phone number so our team can assist you."
             
             if confidence < 75:
                 escalation_required = True
@@ -508,12 +594,18 @@ def index():
 def chat():
     data = request.json
     user_input = data.get("message", "")
+    conversation_history = data.get("conversation_history", [])
     
     if not user_input:
         return jsonify({"error": "Empty message"}), 400
     
-    # Get structured AI response
-    response_data = get_ai_response(user_input)
+    # Get structured AI response with knowledge base lookup
+    response_data = get_ai_response_enhanced(user_input, conversation_history)
+    
+    # Auto-learn: Add to knowledge base if it's a good LLM response
+    if response_data.get("source") != "knowledge_base" and response_data.get("confidence", 0) > 85:
+        # Could be added to knowledge base for future use
+        pass  # Optional: Implement auto-learning here
     
     # Update memory
     update_memory(user_input)
@@ -546,6 +638,658 @@ def stats():
         "category_counts": category_counts,
         "escalation_count": escalation_count
     })
+
+# ============================================
+# NEW FEATURES - Enhanced Response Intelligence
+# ============================================
+
+def generate_confidence_reason(confidence_score, query, category, source="llm"):
+    """Generate explanation for confidence score."""
+    query_lower = query.lower()
+    
+    if source == "knowledge_base":
+        return "Exact match found in knowledge base FAQ"
+    
+    if confidence_score >= 90:
+        if any(word in query_lower for word in ["error", "bug", "issue", "problem"]):
+            return "Clear technical issue pattern detected"
+        elif any(word in query_lower for word in ["bill", "invoice", "payment", "charge"]):
+            return "Matched known billing inquiry pattern"
+        else:
+            return "High clarity in user query with specific keywords"
+    
+    elif confidence_score >= 75:
+        if len(query) < 20:
+            return "Query is brief but contains recognizable keywords"
+        else:
+            return "Good keyword match with moderate context"
+    
+    elif confidence_score >= 60:
+        return "Partial pattern match - some ambiguity detected"
+    else:
+        if len(query) < 10:
+            return "Query is too vague or incomplete"
+        elif any(word in query_lower for word in ["what", "how", "why", "when", "where"]):
+            return "User query is a general question with low specificity"
+        else:
+            return "Unclear user intent - multiple interpretations possible"
+
+def generate_suggested_actions(category, query, sentiment="Neutral"):
+    """Generate actionable steps based on issue type."""
+    query_lower = query.lower()
+    actions = []
+    
+    if category == "Technical":
+        actions = [
+            "Try refreshing the page or restarting the application",
+            "Clear browser cache and cookies",
+            "Check your internet connection stability"
+        ]
+        if "login" in query_lower or "password" in query_lower:
+            actions.append("Use 'Forgot Password' option if unable to login")
+        elif any(word in query_lower for word in ["error", "crash", "bug"]):
+            actions.append("Screenshot any error messages for support team")
+    
+    elif category == "Billing":
+        actions = [
+            "Check your email for recent invoice/receipt",
+            "Verify payment method is up to date",
+            "Review subscription details in account settings"
+        ]
+        if "refund" in query_lower or "cancel" in query_lower:
+            actions.append("Review our refund policy before proceeding")
+    
+    elif category == "Account":
+        actions = [
+            "Verify account credentials are correct",
+            "Check if account verification email was received",
+            "Ensure you're using the correct login portal"
+        ]
+    
+    else:  # General
+        actions = [
+            "Browse our services page for detailed information",
+            "Check our FAQ section for common questions",
+            "Contact support for personalized assistance"
+        ]
+    
+    # Add escalation suggestion for frustrated users
+    if sentiment == "Angry":
+        actions.append("Click 'Escalate' to speak with a human agent immediately")
+    
+    return actions[:4]  # Return max 4 actions
+
+def calculate_escalation_priority(escalation_level, sentiment, is_repeated, confidence):
+    """Calculate escalation priority (Low/Medium/High)."""
+    priority_score = 0
+    
+    # Base priority from escalation level
+    if escalation_level == "high":
+        priority_score += 50
+    elif escalation_level == "medium":
+        priority_score += 30
+    else:
+        priority_score += 10
+    
+    # Sentiment factor
+    if sentiment == "Angry":
+        priority_score += 25
+    elif sentiment == "Neutral":
+        priority_score += 10
+    
+    # Repetition factor
+    if is_repeated:
+        priority_score += 20
+    
+    # Low confidence increases priority
+    if confidence < 60:
+        priority_score += 15
+    
+    # Determine priority
+    if priority_score >= 70:
+        return "High"
+    elif priority_score >= 40:
+        return "Medium"
+    else:
+        return "Low"
+
+def generate_issue_summary(query, category, service="General Support"):
+    """Generate 1-line issue summary."""
+    query_lower = query.lower()
+    
+    if category == "Technical":
+        if "website" in query_lower or "site" in query_lower:
+            return "User experiencing website-related technical issue"
+        elif "app" in query_lower or "mobile" in query_lower:
+            return "User reporting mobile application problem"
+        elif "login" in query_lower or "access" in query_lower:
+            return "User unable to access account/system"
+        else:
+            return f"Technical issue reported in {service}"
+    
+    elif category == "Billing":
+        if any(word in query_lower for word in ["refund", "money back"]):
+            return "User requesting billing refund or cancellation"
+        elif any(word in query_lower for word in ["charge", "overcharge", "wrong"]):
+            return "User reporting incorrect billing charge"
+        else:
+            return "User inquiry regarding billing or payment"
+    
+    elif category == "Account":
+        if "password" in query_lower or "reset" in query_lower:
+            return "User requesting password reset assistance"
+        else:
+            return "User account management inquiry"
+    
+    else:
+        if any(word in query_lower for word in ["price", "cost", "how much"]):
+            return f"User inquiring about {service} pricing"
+        elif any(word in query_lower for word in ["service", "offer", "do you"]):
+            return f"User asking about {service} services"
+        else:
+            return f"General inquiry about {service}"
+
+# ============================================
+# NEW FEATURES - Production Upgrades
+# ============================================
+
+# Knowledge Base File
+KNOWLEDGE_BASE_FILE = os.path.join(DATA_DIR, "knowledge_base.json")
+
+# Chat Sessions Storage (for save functionality)
+CHAT_SESSIONS_FILE = os.path.join(DATA_DIR, "chat_sessions.json")
+
+# Initialize chat sessions file
+if not os.path.exists(CHAT_SESSIONS_FILE):
+    with open(CHAT_SESSIONS_FILE, 'w') as f:
+        json.dump({}, f)
+
+# Email Configuration (Demo Mode)
+SUPPORT_EMAIL = "aryansonsurkar87@gmail.com"
+EMAIL_ENABLED = False  # Set to True and configure SMTP for real email sending
+
+def load_knowledge_base():
+    """Load knowledge base from JSON file."""
+    try:
+        with open(KNOWLEDGE_BASE_FILE, 'r') as f:
+            data = json.load(f)
+            return data.get("knowledge_base", [])
+    except:
+        return []
+
+def save_knowledge_base(kb_data):
+    """Save updated knowledge base to JSON file."""
+    try:
+        with open(KNOWLEDGE_BASE_FILE, 'r') as f:
+            full_data = json.load(f)
+        full_data["knowledge_base"] = kb_data
+        with open(KNOWLEDGE_BASE_FILE, 'w') as f:
+            json.dump(full_data, f, indent=2)
+        return True
+    except:
+        return False
+
+def search_knowledge_base(query, threshold=0.6):
+    """
+    Search knowledge base for matching query.
+    Returns matching entry if confidence >= threshold, else None.
+    """
+    kb = load_knowledge_base()
+    query_lower = query.lower()
+    
+    best_match = None
+    best_score = 0
+    
+    for entry in kb:
+        # Calculate match score based on pattern matching
+        patterns = entry.get("question_patterns", [])
+        max_pattern_score = 0
+        
+        for pattern in patterns:
+            pattern_lower = pattern.lower()
+            # Exact match
+            if pattern_lower == query_lower:
+                max_pattern_score = 1.0
+                break
+            # Contains pattern
+            elif pattern_lower in query_lower or query_lower in pattern_lower:
+                # Calculate similarity based on word overlap
+                query_words = set(query_lower.split())
+                pattern_words = set(pattern_lower.split())
+                if query_words and pattern_words:
+                    intersection = query_words.intersection(pattern_words)
+                    union = query_words.union(pattern_words)
+                    score = len(intersection) / len(union)
+                    max_pattern_score = max(max_pattern_score, score)
+        
+        if max_pattern_score > best_score and max_pattern_score >= threshold:
+            best_score = max_pattern_score
+            best_match = entry
+    
+    return best_match, best_score
+
+def add_to_knowledge_base(question, answer, category, service):
+    """Add new Q&A pair to knowledge base (auto-learning)."""
+    kb = load_knowledge_base()
+    
+    new_entry = {
+        "id": len(kb) + 1,
+        "question_patterns": [question.lower()],
+        "category": category,
+        "service": service,
+        "answer": answer,
+        "confidence_threshold": 0.85,
+        "usage_count": 1
+    }
+    
+    kb.append(new_entry)
+    return save_knowledge_base(kb)
+
+def update_knowledge_usage(entry_id):
+    """Increment usage count for a knowledge base entry."""
+    kb = load_knowledge_base()
+    for entry in kb:
+        if entry.get("id") == entry_id:
+            entry["usage_count"] = entry.get("usage_count", 0) + 1
+            save_knowledge_base(kb)
+            break
+
+@app.route('/knowledge-search', methods=['POST'])
+def knowledge_search():
+    """Endpoint to search knowledge base."""
+    data = request.json
+    query = data.get("query", "")
+    threshold = data.get("threshold", 0.6)
+    
+    if not query:
+        return jsonify({"found": False, "error": "Empty query"}), 400
+    
+    match, score = search_knowledge_base(query, threshold)
+    
+    if match:
+        update_knowledge_usage(match.get("id"))
+        return jsonify({
+            "found": True,
+            "confidence": round(score, 2),
+            "answer": match.get("answer"),
+            "category": match.get("category"),
+            "service": match.get("service"),
+            "entry_id": match.get("id")
+        })
+    else:
+        return jsonify({"found": False, "confidence": 0})
+
+# Modified get_ai_response to use knowledge base first with enhanced features
+def get_ai_response_enhanced(user_input, conversation_history=None):
+    """Enhanced AI response with knowledge base lookup first and all new features."""
+    
+    # Start response time tracking
+    start_time = time.time()
+    
+    # Step 1: Check knowledge base first
+    kb_match, kb_score = search_knowledge_base(user_input, threshold=0.7)
+    
+    if kb_match and kb_score >= kb_match.get("confidence_threshold", 0.85):
+        # Use knowledge base answer
+        is_repeated = check_repeated_issue(user_input)
+        prompt_prefix = "I see you're still facing this issue... " if is_repeated else ""
+        
+        # Determine sentiment from query
+        sentiment = "Neutral"
+        user_lower = user_input.lower()
+        if any(word in user_lower for word in ["angry", "frustrated", "terrible", "worst", "hate"]):
+            sentiment = "Angry"
+        elif any(word in user_lower for word in ["happy", "great", "excellent", "love", "good"]):
+            sentiment = "Happy"
+        
+        # Get category and service from knowledge base
+        category = kb_match.get("category", "General")
+        service = kb_match.get("service", "General Support")
+        confidence = int(kb_score * 100)
+        
+        # Calculate response time
+        response_time = round(time.time() - start_time, 2)
+        
+        # Generate enhanced fields
+        confidence_reason = generate_confidence_reason(confidence, user_input, category, source="knowledge_base")
+        suggested_actions = generate_suggested_actions(category, user_input, sentiment)
+        summary = generate_issue_summary(user_input, category, service)
+        escalation_priority = "Low"  # Knowledge base matches are low priority
+        
+        return {
+            "category": category,
+            "service": service,
+            "sentiment": sentiment,
+            "confidence": confidence,
+            "confidence_reason": confidence_reason,
+            "suggested_actions": suggested_actions,
+            "summary": summary,
+            "issue": user_input[:50] + "..." if len(user_input) > 50 else user_input,
+            "response": prompt_prefix + kb_match.get("answer"),
+            "escalation": "No",
+            "escalation_level": "low",
+            "escalation_priority": escalation_priority,
+            "decision_trace": f"Knowledge base match found (confidence: {confidence}%, reason: {confidence_reason}); Retrieved from FAQ database; Category: {category}; Service: {service}",
+            "reason": "Answer found in knowledge base - no escalation needed",
+            "response_time": f"{response_time}s",
+            "source": "knowledge_base",
+            "entry_id": kb_match.get("id")
+        }
+    
+    # Step 2: Fall back to LLM if no knowledge base match
+    llm_response = get_ai_response(user_input)
+    
+    # Calculate response time
+    response_time = round(time.time() - start_time, 2)
+    
+    # Enhance LLM response with new fields
+    category = llm_response.get("category", "General")
+    service = llm_response.get("service", "General Support")
+    sentiment = llm_response.get("sentiment", "Neutral")
+    confidence = llm_response.get("confidence", 0)
+    escalation_level = llm_response.get("escalation_level", "low")
+    
+    # Generate enhanced fields
+    confidence_reason = generate_confidence_reason(confidence, user_input, category, source="llm")
+    suggested_actions = generate_suggested_actions(category, user_input, sentiment)
+    summary = generate_issue_summary(user_input, category, service)
+    is_repeated = check_repeated_issue(user_input)
+    escalation_priority = calculate_escalation_priority(escalation_level, sentiment, is_repeated, confidence)
+    
+    # Update response with new fields
+    llm_response["confidence_reason"] = confidence_reason
+    llm_response["suggested_actions"] = suggested_actions
+    llm_response["summary"] = summary
+    llm_response["escalation_priority"] = escalation_priority
+    llm_response["response_time"] = f"{response_time}s"
+    
+    # Update decision trace to include confidence reason
+    if "decision_trace" in llm_response:
+        llm_response["decision_trace"] += f"; Confidence assessment: {confidence_reason}"
+    
+    return llm_response
+
+@app.route('/escalate', methods=['POST'])
+def escalate():
+    """
+    Endpoint to handle escalation requests.
+    Collects user contact info and creates escalation ticket.
+    """
+    data = request.json
+    
+    query = data.get("query", "")
+    category = data.get("category", "General")
+    sentiment = data.get("sentiment", "Neutral")
+    issue = data.get("issue", "")
+    conversation = data.get("conversation", [])
+    
+    # Collect user info
+    user_name = data.get("user_name", "")
+    contact_type = data.get("contact_type", "email")  # 'email' or 'phone'
+    contact_value = data.get("contact_value", "")
+    
+    if not contact_value:
+        return jsonify({"error": "Contact information required", "success": False}), 400
+    
+    if not user_name:
+        return jsonify({"error": "Name is required", "success": False}), 400
+    
+    # Generate escalation ticket
+    ticket_id = f"ESC-{datetime.now().strftime('%Y%m%d-%H%M%S')}-{int(time.time()) % 1000}"
+    
+    escalation_data = {
+        "ticket_id": ticket_id,
+        "timestamp": datetime.now().isoformat(),
+        "user_name": user_name,
+        "user_query": query,
+        "category": category,
+        "sentiment": sentiment,
+        "issue": issue,
+        "conversation_history": conversation,
+        "contact_type": contact_type,
+        "contact_value": contact_value,
+        "status": "open",
+        "assigned_to": None,
+        "priority": "high" if sentiment == "Angry" else "medium"
+    }
+    
+    # Save escalation ticket
+    try:
+        with open(HISTORY_FILE, 'r') as f:
+            history = json.load(f)
+    except:
+        history = []
+    
+    escalation_entry = {
+        "timestamp": escalation_data["timestamp"],
+        "query": query,
+        "category": category,
+        "escalation": "Yes",
+        "ticket_id": ticket_id,
+        "contact": contact_value
+    }
+    history.append(escalation_entry)
+    
+    with open(HISTORY_FILE, 'w') as f:
+        json.dump(history, f, indent=2)
+    
+    # Create email content for escalation
+    email_content = f"""
+ESCALATION TICKET: {ticket_id}
+
+Customer Information:
+- Name: {user_name}
+- Contact ({contact_type}): {contact_value}
+
+Issue Summary:
+- Category: {category}
+- Sentiment: {sentiment}
+- Issue: {issue}
+- Priority: {escalation_data["priority"]}
+
+Original Query:
+{query}
+
+Conversation History:
+{chr(10).join([f"- {msg.get('sender', 'Unknown')}: {msg.get('text', '')}" for msg in conversation])}
+
+---
+This ticket was auto-generated by SupportAI.
+Please respond within 2 hours for high priority tickets.
+
+SECURITY NOTIFICATION: User {user_name} has requested human agent support.
+"""
+    
+    # Send escalation email to security person (aryansonsurkar87@gmail.com)
+    email_sent = False
+    if EMAIL_ENABLED:
+        subject = f"🚨 ESCALATION ALERT: {ticket_id} - {user_name}"
+        success, message = send_email_smtp("aryansonsurkar87@gmail.com", subject, email_content)
+        if success:
+            email_sent = True
+            print(f"Escalation email sent to security person: {ticket_id}")
+        else:
+            print(f"Failed to send escalation email: {message}")
+    
+    # Also send confirmation email to user if they provided email
+    user_email_sent = False
+    if EMAIL_ENABLED and contact_type == "email":
+        user_subject = f"SupportAI Escalation Confirmation - Ticket {ticket_id}"
+        user_email_content = f"""Dear {user_name},
+
+Your escalation request has been received and assigned ticket ID: {ticket_id}
+
+Issue Details:
+- Category: {category}
+- Priority: {escalation_data["priority"]}
+- Issue: {issue}
+
+Our human support agent will contact you within 2 hours at: {contact_value}
+
+Ticket ID: {ticket_id}
+Status: Open
+
+Thank you for your patience.
+SupportAI Team
+"""
+        user_success, user_message = send_email_smtp(contact_value, user_subject, user_email_content)
+        if user_success:
+            user_email_sent = True
+            print(f"Confirmation email sent to user: {contact_value}")
+        else:
+            print(f"Failed to send user confirmation email: {user_message}")
+    
+    # Handle WhatsApp escalation if contact type is phone
+    whatsapp_url = None
+    if contact_type == "phone" or contact_type == "whatsapp":
+        try:
+            # Clean phone number for WhatsApp URL
+            clean_phone = contact_value.replace('+', '').replace('-', '').replace(' ', '').replace('(', '').replace(')', '')
+            
+            # Validate phone number (should be digits only)
+            if not clean_phone.isdigit() or len(clean_phone) < 10:
+                return jsonify({
+                    "success": False,
+                    "error": "Invalid phone number format. Please enter a valid phone number with country code."
+                }), 400
+            
+            # Create WhatsApp message for escalation
+            whatsapp_text = f"""SupportAI Escalation Request
+
+Ticket ID: {ticket_id}
+Name: {user_name}
+Issue: {issue}
+Category: {category}
+Urgency: {escalation_data["priority"]}
+
+Customer Contact: {contact_value}
+
+Original Query: {query}
+
+Hello {user_name}, please contact our support team immediately. We'll help resolve your issue.
+SupportAI Team"""
+            
+            # Generate WhatsApp URL with proper encoding
+            whatsapp_url = f"https://wa.me/{clean_phone}?text={urllib.parse.quote(whatsapp_text)}"
+            
+        except Exception as e:
+            print(f"WhatsApp URL generation error: {e}")
+            return jsonify({
+                "success": False,
+                "error": "Failed to generate WhatsApp link. Please check your phone number."
+            }), 500
+    
+    return jsonify({
+        "success": True,
+        "ticket_id": ticket_id,
+        "message": f"Escalation ticket created successfully. Our team will contact you at your {contact_type} ({contact_value}) within 2 hours.",
+        "email_preview": email_content,
+        "email_sent": email_sent,
+        "whatsapp_url": whatsapp_url,
+        "support_email": SUPPORT_EMAIL
+    })
+
+@app.route('/send-email', methods=['POST'])
+def send_email():
+    """Send chat transcript via email."""
+    data = request.json
+    
+    email = data.get("email", "").strip()
+    chat = data.get("chat", "")
+    
+    # Validate input
+    if not email or '@' not in email:
+        return jsonify({"error": "Valid email address required", "success": False}), 400
+    
+    if not chat:
+        return jsonify({"error": "No chat content to send", "success": False}), 400
+    
+    # Format email
+    subject = "SupportAI Chat Summary"
+    body = format_chat_transcript(json.loads(chat) if isinstance(chat, str) else chat, "email-session")
+    
+    # Send email
+    if EMAIL_ENABLED:
+        success, message = send_email_smtp(email, subject, body)
+        if not success:
+            return jsonify({"error": message, "success": False}), 500
+    
+    return jsonify({
+        "success": True,
+        "message": f"Chat transcript sent to {email}",
+        "email": email
+    })
+
+@app.route('/save-chat', methods=['POST'])
+def save_chat():
+    """
+    Endpoint to save chat transcript.
+    Supports email and WhatsApp sharing options.
+    """
+    data = request.json
+    
+    session_id = data.get("session_id", str(int(time.time())))
+    conversation = data.get("conversation", [])
+    save_method = data.get("method", "email")  # 'email' or 'whatsapp'
+    contact_value = data.get("contact_value", "")
+    
+    if not conversation:
+        return jsonify({"error": "No conversation to save", "success": False}), 400
+    
+    # Format conversation transcript using helper function
+    transcript = format_chat_transcript(conversation, session_id)
+    
+    # Save to chat sessions
+    try:
+        with open(CHAT_SESSIONS_FILE, 'r') as f:
+            sessions = json.load(f)
+    except:
+        sessions = {}
+    
+    sessions[session_id] = {
+        "created_at": datetime.now().isoformat(),
+        "conversation": conversation,
+        "transcript": transcript
+    }
+    
+    with open(CHAT_SESSIONS_FILE, 'w') as f:
+        json.dump(sessions, f, indent=2)
+    
+    if save_method == "email":
+        if not contact_value:
+            return jsonify({"error": "Email address required", "success": False}), 400
+        
+        # Send email using SMTP
+        subject = "SupportAI Chat Summary"
+        success, message = send_email_smtp(contact_value, subject, transcript)
+        
+        if not success:
+            return jsonify({"error": message, "success": False}), 500
+        
+        return jsonify({
+            "success": True,
+            "message": f"Chat transcript sent to {contact_value}",
+            "session_id": session_id,
+            "transcript_preview": transcript[:500] + "..." if len(transcript) > 500 else transcript,
+            "email_sent": True
+        })
+    
+    elif save_method == "whatsapp":
+        # Generate WhatsApp share text with proper encoding
+        whatsapp_text = f"SupportAI Chat Transcript\n\n{transcript[:800]}..."
+        # Use proper URL encoding
+        whatsapp_url = f"https://wa.me/?text={urllib.parse.quote(whatsapp_text)}"
+        
+        return jsonify({
+            "success": True,
+            "message": "WhatsApp share link generated. Click to share your chat transcript.",
+            "session_id": session_id,
+            "whatsapp_url": whatsapp_url,
+            "share_text": transcript[:800]
+        })
+    
+    else:
+        return jsonify({"error": "Invalid save method", "success": False}), 400
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)

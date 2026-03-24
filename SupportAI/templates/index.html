@@ -151,27 +151,175 @@
         .voice-toggle.active {
             background-color: #dc3545;
         }
+        .call-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+            margin: 10px 0;
+        }
+        .call-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+        .call-btn.active {
+            background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%);
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 4px 15px rgba(255, 65, 108, 0.4); }
+            50% { box-shadow: 0 6px 25px rgba(255, 65, 108, 0.7); }
+        }
+        .call-timer {
+            font-size: 18px;
+            font-weight: bold;
+            color: #667eea;
+            margin: 10px 0;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.6);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            animation: modalSlide 0.3s ease;
+        }
+        @keyframes modalSlide {
+            from { opacity: 0; transform: translateY(-30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .modal-content h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        .escalation-form, .save-options {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .escalation-form input, .escalation-form select {
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        .escalation-form button, .save-options button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+        .escalation-form button:first-of-type, .save-options button:first-of-type {
+            background: #28a745;
+            color: white;
+        }
+        .escalation-form button:last-of-type, .save-options button:last-of-type {
+            background: #6c757d;
+            color: white;
+        }
+        .success {
+            color: #28a745;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+        .error {
+            color: #dc3545;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+        .whatsapp-link {
+            display: inline-block;
+            margin-top: 10px;
+            padding: 10px 20px;
+            background: #25D366;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+        }
+        /* Priority Level Styling */
+        .priority-high {
+            background: #ff416c;
+            color: white;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-weight: bold;
+            font-size: 0.85em;
+        }
+        .priority-medium {
+            background: #ffa502;
+            color: white;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-weight: bold;
+            font-size: 0.85em;
+        }
+        .priority-low {
+            background: #28a745;
+            color: white;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-weight: bold;
+            font-size: 0.85em;
+        }
+        /* Summary Box Styling */
+        .summary-box {
+            background: linear-gradient(135deg, #667eea20 0%, #764ba220 100%);
+            padding: 12px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+            margin-bottom: 15px;
+        }
+        /* Suggested Actions List */
+        #resSuggestedActions li {
+            margin-bottom: 5px;
+            color: #555;
+            font-size: 0.9em;
+        }
+        #resSuggestedActions li:before {
+            content: "→ ";
+            color: #28a745;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>SupportAI Dashboard</h1>
+        <h1>📞 SupportAI - AI Customer Support</h1>
         
         <div class="call-simulation" id="callSimulation">
-            <div id="callStatus">🤖 Connecting to AI Agent...</div>
+            <div id="callStatus">🤖 AI Agent Ready - Click "Start Call" to begin</div>
+            <div class="call-timer" id="callTimer" style="display:none;">0:00</div>
         </div>
 
-        <div class="voice-controls">
-            <button class="mic-btn" id="micBtn" onclick="toggleVoiceMode()" title="Start Voice Chat" style="cursor: pointer; z-index: 1000;">
+        <div class="voice-controls" style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; align-items: center; margin: 15px 0;">
+            <button class="call-btn" id="callBtn" title="Start Voice Call">
+                📞 Start Call
+            </button>
+            <button class="mic-btn" id="micBtn" onclick="toggleVoiceMode()" title="Quick Voice Input" style="cursor: pointer;">
                 🎤
             </button>
             <div class="voice-status" id="voiceStatus" style="display:none;">Ready</div>
-            <button class="voice-toggle" id="voiceToggle" onclick="toggleVoiceMode()" style="display:none;">
-                Enable Voice Mode
-            </button>
-            <button onclick="console.log('Test button clicked'); alert('Button clicks are working!');" style="padding: 5px 10px; font-size: 12px; background: #28a745; color: white; border: none; border-radius: 3px;">
-                Test Click
-            </button>
         </div>
         
         <div class="chat-box" id="chatWindow">
@@ -186,21 +334,62 @@
         <div id="voiceTranscript" class="transcript" style="display:none;"></div>
 
         <div class="details" id="aiDetails" style="display:none;">
-            <h3>AI Analysis Breakdown</h3>
+            <h3>📊 AI Analysis Breakdown</h3>
+            
+            <!-- Summary Section -->
+            <div class="detail-item summary-box"><strong>📋 Issue Summary:</strong> <span id="resSummary" style="font-weight: 500; color: #333;"></span></div>
+            
+            <!-- Main Fields -->
             <div class="detail-item"><strong>Category:</strong> <span id="resCategory"></span></div>
+            <div class="detail-item"><strong>Service:</strong> <span id="resService"></span></div>
             <div class="detail-item"><strong>Sentiment:</strong> <span id="resSentiment"></span></div>
+            
+            <!-- Confidence with Reason -->
             <div class="detail-item"><strong>Confidence:</strong> <span id="resConfidence"></span>%</div>
+            <div class="detail-item"><strong>🎯 Confidence Reason:</strong> <span id="resConfidenceReason" style="font-style: italic; color: #666;"></span></div>
+            
+            <!-- Response Time -->
+            <div class="detail-item"><strong>⚡ Response Time:</strong> <span id="resResponseTime" style="font-family: monospace; color: #28a745;"></span></div>
+            
+            <!-- Escalation Info -->
             <div class="detail-item"><strong>Escalation:</strong> <span id="resEscalation"></span></div>
-            <div class="detail-item"><strong>Escalation Level:</strong> <span id="resEscalationLevel"></span></div>
+            <div class="detail-item"><strong>🚨 Escalation Priority:</strong> <span id="resEscalationPriority"></span></div>
+            
+            <!-- Suggested Actions -->
+            <div class="detail-item">
+                <strong>✅ Suggested Actions:</strong>
+                <ul id="resSuggestedActions" style="margin-top: 5px; padding-left: 20px;"></ul>
+            </div>
+            
+            <!-- Decision Trace -->
             <div class="detail-item"><strong>Decision Trace:</strong> <span id="resDecisionTrace" style="font-size: 0.85em; color: #666;"></span></div>
         </div>
         
         <div style="margin-top: 15px; padding: 10px; background: #f8f9fa; border-radius: 5px; font-size: 12px; color: #666;">
-            <strong>Voice Mode:</strong> Click 🎤 to start talking, or type messages below. Works best in Chrome browser.
+            <strong>🎤 Voice Call Mode:</strong> Click "Start Call" for continuous voice conversation. AI will speak all responses automatically.
         </div>
 
         <button class="stats-btn" onclick="viewStats()">View Session Stats</button>
+        <button class="stats-btn" onclick="showSaveChatDialog()" style="background: #17a2b8; margin-left: 10px;">💾 Save Chat</button>
         <div id="statsBox" class="details" style="display:none;"></div>
+    </div>
+
+    <!-- Escalation Modal -->
+    <div id="escalationModal" class="modal" style="display:none;">
+        <div class="modal-content">
+            <h3>🚨 Escalate to Human Support</h3>
+            <div class="escalation-form">
+                <input type="text" id="escalationName" placeholder="Enter your full name" required>
+                <select id="escalationType" onchange="updateContactPlaceholder()">
+                    <option value="email">📧 Email</option>
+                    <option value="phone">📱 Phone/WhatsApp</option>
+                </select>
+                <input type="text" id="escalationContact" placeholder="Enter your email address">
+                <button onclick="submitEscalation()">Submit Escalation</button>
+                <button onclick="closeEscalationModal()">Cancel</button>
+            </div>
+            <div id="escalationResult" style="margin-top: 15px;"></div>
+        </div>
     </div>
 
     <script src="/static/script.js"></script>

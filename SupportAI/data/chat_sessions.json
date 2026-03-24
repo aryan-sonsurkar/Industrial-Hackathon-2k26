@@ -1,0 +1,114 @@
+{
+  "1774347513286": {
+    "created_at": "2026-03-24T15:54:32.595617",
+    "conversation": [
+      {
+        "sender": "You",
+        "text": "hello",
+        "time": "3:48:37 pm"
+      },
+      {
+        "sender": "SupportAI",
+        "text": "Welcome to our IT services company! How can I assist you today? Please let me know what you need help with.",
+        "time": "3:48:53 pm"
+      },
+      {
+        "sender": "You",
+        "text": "My website is not loading",
+        "time": "3:49:49 pm"
+      },
+      {
+        "sender": "SupportAI",
+        "text": "Sorry to hear that your website isn't loading. Can you please provide more details about the issue, such as what error message you're seeing (if any) and when this started happening? This will help me troubleshoot the problem.",
+        "time": "3:50:00 pm"
+      },
+      {
+        "sender": "You",
+        "text": "what is the cost of a website?",
+        "time": "3:50:20 pm"
+      },
+      {
+        "sender": "SupportAI",
+        "text": "Pricing depends on your requirements such as features, design, and complexity. Our team can provide a customized quote.",
+        "time": "3:50:28 pm"
+      },
+      {
+        "sender": "You",
+        "text": "Do you provide a SEO service?",
+        "time": "3:50:38 pm"
+      },
+      {
+        "sender": "SupportAI",
+        "text": "Yes, we offer Digital Marketing services including Search Engine Optimization (SEO). Our team can help improve your website's visibility and ranking on search engines.",
+        "time": "3:50:48 pm"
+      },
+      {
+        "sender": "You",
+        "text": "I want to talk to a human agent",
+        "time": "3:51:11 pm"
+      },
+      {
+        "sender": "SupportAI",
+        "text": "Sure, I will connect you to a human support agent. Please provide your email or phone number so our team can assist you.",
+        "time": "3:51:21 pm"
+      },
+      {
+        "sender": "You",
+        "text": "This is not working again",
+        "time": "3:52:16 pm"
+      },
+      {
+        "sender": "SupportAI",
+        "text": "Sorry to hear that the website isn't functioning as expected. Can you please provide more details about the issue, such as what specific part of the site is not working and when it started experiencing problems? Our team will do their best to help troubleshoot the issue.",
+        "time": "3:52:27 pm"
+      },
+      {
+        "sender": "You",
+        "text": "my app crashed",
+        "time": "3:52:50 pm"
+      },
+      {
+        "sender": "SupportAI",
+        "text": "Sorry to hear that your mobile app crashed. Can you please provide more details about the issue, such as what was happening when it happened and what device and operating system you were using? This will help our team investigate further.",
+        "time": "3:53:00 pm"
+      },
+      {
+        "sender": "You",
+        "text": "still not working",
+        "time": "3:53:02 pm"
+      },
+      {
+        "sender": "SupportAI",
+        "text": "Sorry to hear that our solution didn't resolve the issue. Can you please provide more details about what's not working as expected? Are there any error messages or specific behaviors you're observing?",
+        "time": "3:53:11 pm"
+      }
+    ],
+    "transcript": "SUPPORTAI CHAT TRANSCRIPT\nSession ID: 1774347513286\nDate: 2026-03-24 15:54:32\n\n[3:48:37 pm] You: hello\n[3:48:53 pm] SupportAI: Welcome to our IT services company! How can I assist you today? Please let me know what you need help with.\n[3:49:49 pm] You: My website is not loading\n[3:50:00 pm] SupportAI: Sorry to hear that your website isn't loading. Can you please provide more details about the issue, such as what error message you're seeing (if any) and when this started happening? This will help me troubleshoot the problem.\n[3:50:20 pm] You: what is the cost of a website?\n[3:50:28 pm] SupportAI: Pricing depends on your requirements such as features, design, and complexity. Our team can provide a customized quote.\n[3:50:38 pm] You: Do you provide a SEO service?\n[3:50:48 pm] SupportAI: Yes, we offer Digital Marketing services including Search Engine Optimization (SEO). Our team can help improve your website's visibility and ranking on search engines.\n[3:51:11 pm] You: I want to talk to a human agent\n[3:51:21 pm] SupportAI: Sure, I will connect you to a human support agent. Please provide your email or phone number so our team can assist you.\n[3:52:16 pm] You: This is not working again\n[3:52:27 pm] SupportAI: Sorry to hear that the website isn't functioning as expected. Can you please provide more details about the issue, such as what specific part of the site is not working and when it started experiencing problems? Our team will do their best to help troubleshoot the issue.\n[3:52:50 pm] You: my app crashed\n[3:53:00 pm] SupportAI: Sorry to hear that your mobile app crashed. Can you please provide more details about the issue, such as what was happening when it happened and what device and operating system you were using? This will help our team investigate further.\n[3:53:02 pm] You: still not working\n[3:53:11 pm] SupportAI: Sorry to hear that our solution didn't resolve the issue. Can you please provide more details about what's not working as expected? Are there any error messages or specific behaviors you're observing?\n\n---\nThank you for using SupportAI!\nFor further assistance, contact: aryansonsurkar87@gmail.com"
+  },
+  "1774348183970": {
+    "created_at": "2026-03-24T16:00:40.937841",
+    "conversation": [
+      {
+        "sender": "You",
+        "text": "hello",
+        "time": "3:59:50 pm"
+      },
+      {
+        "sender": "You",
+        "text": "my website crashed",
+        "time": "4:00:01 pm"
+      },
+      {
+        "sender": "SupportAI",
+        "text": "\"Hello! Our company offers Web Development, Mobile App Development, Digital Marketing, and Software Solutions. Which of these services are you interested in learning more about?\"",
+        "time": "4:00:09 pm"
+      },
+      {
+        "sender": "SupportAI",
+        "text": "Sorry to hear that your website has crashed. Can you please provide more details about the issue, such as any error messages or recent changes made to the site? This will help me better assist you.",
+        "time": "4:00:15 pm"
+      }
+    ],
+    "transcript": "SUPPORTAI CHAT TRANSCRIPT\nSession ID: 1774348183970\nDate: 2026-03-24 16:00:40\n\n[3:59:50 pm] You: hello\n[4:00:01 pm] You: my website crashed\n[4:00:09 pm] SupportAI: \"Hello! Our company offers Web Development, Mobile App Development, Digital Marketing, and Software Solutions. Which of these services are you interested in learning more about?\"\n[4:00:15 pm] SupportAI: Sorry to hear that your website has crashed. Can you please provide more details about the issue, such as any error messages or recent changes made to the site? This will help me better assist you.\n\n---\nThank you for using SupportAI!\nFor further assistance, contact: aryansonsurkar87@gmail.com"
+  }
+}

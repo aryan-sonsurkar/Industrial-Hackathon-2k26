@@ -1,0 +1,145 @@
+{
+  "knowledge_base": [
+    {
+      "id": 1,
+      "question_patterns": ["what services do you offer", "what do you do", "services", "company services"],
+      "category": "General",
+      "service": "General Support",
+      "answer": "We offer four main services: Web Development (websites & web apps), Mobile App Development (iOS & Android), Digital Marketing (SEO & advertising), and Software Solutions (custom software & integrations). How can we help you today?",
+      "confidence_threshold": 0.85,
+      "usage_count": 0
+    },
+    {
+      "id": 2,
+      "question_patterns": ["how much does a website cost", "website pricing", "web development cost", "price for website"],
+      "category": "Billing",
+      "service": "Web Development",
+      "answer": "Website development costs vary based on complexity. A basic website starts from $2,000, while complex web applications can range from $10,000-$50,000+. Would you like a custom quote based on your specific requirements?",
+      "confidence_threshold": 0.85,
+      "usage_count": 0
+    },
+    {
+      "id": 3,
+      "question_patterns": ["mobile app cost", "app development price", "how much for an app", "iphone app cost"],
+      "category": "Billing",
+      "service": "Mobile App Development",
+      "answer": "Mobile app development typically ranges from $5,000-$25,000 depending on features, platforms (iOS/Android/both), and complexity. Cross-platform solutions using React Native or Flutter can help reduce costs. Would you like to discuss your app idea?",
+      "confidence_threshold": 0.85,
+      "usage_count": 0
+    },
+    {
+      "id": 4,
+      "question_patterns": ["seo pricing", "digital marketing cost", "marketing packages", "seo services price"],
+      "category": "Billing",
+      "service": "Digital Marketing",
+      "answer": "Our Digital Marketing services start from $500/month for basic SEO and social media management. Comprehensive packages including PPC, content marketing, and analytics range from $1,500-$5,000/month. We can customize a package based on your goals and budget.",
+      "confidence_threshold": 0.85,
+      "usage_count": 0
+    },
+    {
+      "id": 5,
+      "question_patterns": ["website not loading", "site is down", "can't access website", "404 error", "page not found"],
+      "category": "Technical",
+      "service": "Web Development",
+      "answer": "I understand your website is not accessible. This could be due to server issues, DNS problems, or hosting outages. Let me escalate this to our technical team immediately. Please provide your domain name and any error messages you're seeing.",
+      "confidence_threshold": 0.90,
+      "usage_count": 0
+    },
+    {
+      "id": 6,
+      "question_patterns": ["app crashing", "app keeps closing", "application error", "mobile app bug"],
+      "category": "Technical",
+      "service": "Mobile App Development",
+      "answer": "App crashes can be caused by various issues including memory problems, API failures, or device compatibility. Please share: 1) The device model and OS version, 2) When the crash occurs, 3) Any error messages. Our team will investigate immediately.",
+      "confidence_threshold": 0.90,
+      "usage_count": 0
+    },
+    {
+      "id": 7,
+      "question_patterns": ["wrong invoice", "incorrect charge", "billing error", "overcharged", "double charged"],
+      "category": "Billing",
+      "service": "General Support",
+      "answer": "I apologize for the billing discrepancy. Please share your invoice number and the expected amount. Our billing team will investigate within 24 hours. If this is urgent, I can escalate to a billing specialist immediately.",
+      "confidence_threshold": 0.90,
+      "usage_count": 0
+    },
+    {
+      "id": 8,
+      "question_patterns": ["forgot password", "can't login", "account locked", "reset password", "login issues"],
+      "category": "Account",
+      "service": "General Support",
+      "answer": "I can help you regain access to your account. Please click 'Forgot Password' on the login page, or if your account is locked, provide your registered email and I'll initiate an unlock request. For security, we may need to verify your identity.",
+      "confidence_threshold": 0.90,
+      "usage_count": 0
+    },
+    {
+      "id": 9,
+      "question_patterns": ["how long to build a website", "website timeline", "development time", "project duration"],
+      "category": "General",
+      "service": "Web Development",
+      "answer": "Website development timelines vary: Simple websites take 2-4 weeks, business websites 4-8 weeks, and complex web applications 8-16 weeks. Timelines depend on design approval, content readiness, and feature complexity. We provide detailed timelines during project scoping.",
+      "confidence_threshold": 0.85,
+      "usage_count": 0
+    },
+    {
+      "id": 10,
+      "question_patterns": ["app store rejection", "play store rejected", "app not approved", "ios rejection"],
+      "category": "Technical",
+      "service": "Mobile App Development",
+      "answer": "App store rejections are common and fixable. Common reasons include: missing privacy policy, UI/UX issues, or policy violations. Please share the rejection reason from Apple/Google, and our team will guide you through the fixes needed for approval.",
+      "confidence_threshold": 0.90,
+      "usage_count": 0
+    },
+    {
+      "id": 11,
+      "question_patterns": ["refund policy", "money back", "can i get refund", "cancel service"],
+      "category": "Billing",
+      "service": "General Support",
+      "answer": "Our refund policy: For services not yet started - full refund within 7 days. For ongoing projects - prorated refund based on work completed. For completed projects - case-by-case review. Please share your project ID and reason for refund request.",
+      "confidence_threshold": 0.85,
+      "usage_count": 0
+    },
+    {
+      "id": 12,
+      "question_patterns": ["contact support", "phone number", "email support", "call support", "talk to someone"],
+      "category": "General",
+      "service": "General Support",
+      "answer": "You can reach our support team through: 1) This chat (fastest for quick queries), 2) Email: aryansonsurkar87@gmail.com (24-48 hour response), 3) Schedule a call through our portal for complex discussions. What works best for you?",
+      "confidence_threshold": 0.85,
+      "usage_count": 0
+    },
+    {
+      "id": 13,
+      "question_patterns": ["api integration", "connect api", "third party integration", "payment gateway"],
+      "category": "Technical",
+      "service": "Software Solutions",
+      "answer": "We specialize in API integrations including payment gateways (Stripe, PayPal), CRM systems, social media APIs, and custom third-party integrations. Integration complexity and cost depend on the API documentation quality and authentication method. What system do you need to integrate?",
+      "confidence_threshold": 0.85,
+      "usage_count": 0
+    },
+    {
+      "id": 14,
+      "question_patterns": ["wordpress vs custom", "should i use wordpress", "cms or custom", "website platform"],
+      "category": "General",
+      "service": "Web Development",
+      "answer": "WordPress is great for content-heavy sites with budgets under $5,000 and quick timelines. Custom development is better for: unique functionality, high performance, scalability, or complex business logic. Let me understand your needs to recommend the best approach.",
+      "confidence_threshold": 0.85,
+      "usage_count": 0
+    },
+    {
+      "id": 15,
+      "question_patterns": ["ssl certificate", "https not working", "site not secure", "security warning"],
+      "category": "Technical",
+      "service": "Web Development",
+      "answer": "SSL/HTTPS issues can harm your SEO and user trust. Common fixes: 1) Renew expired certificates, 2) Fix mixed content (HTTP resources on HTTPS page), 3) Update CDN settings. This is usually resolved within 1-2 hours. Should I escalate this to our security team?",
+      "confidence_threshold": 0.90,
+      "usage_count": 0
+    }
+  ],
+  "metadata": {
+    "version": "1.0",
+    "last_updated": "2026-03-24",
+    "total_entries": 15,
+    "auto_learning_enabled": true
+  }
+}
