@@ -1,5 +1,5 @@
 /* ============================================
-   Header & Footer Styles - SupportAI Branding
+   Header & Footer Styles - AccuHelp Branding
    ============================================ */
 
 /* App Header */
@@ -34,8 +34,18 @@
     transition: transform 0.3s ease;
 }
 
+.logo img {
+    height: 40px;
+    width: auto;
+    transition: transform 0.3s ease;
+}
+
 .logo:hover {
     transform: scale(1.05);
+}
+
+.logo:hover img {
+    transform: scale(1.1);
 }
 
 .logo i {
@@ -107,6 +117,11 @@
     font-size: 1.25rem;
     font-weight: 700;
     color: var(--primary);
+}
+
+.footer-logo img {
+    height: 30px;
+    width: auto;
 }
 
 .footer-logo i {
