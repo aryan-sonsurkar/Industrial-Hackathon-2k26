@@ -454,45 +454,41 @@ function displayMessage(sender, text, className) {
 function updateAnalysisDisplay(data) {
     const aiDetails = document.getElementById('aiDetails');
     if (aiDetails) {
+        // Use classList for more robust visibility control with CSS important flags
+        aiDetails.classList.remove('hidden');
         aiDetails.style.display = 'block';
         
-        // Display summary at the top if available
-        const summaryDiv = document.getElementById('resSummary');
-        if (summaryDiv) summaryDiv.textContent = data.summary || 'N/A';
-        
-        // Update existing fields
-        document.getElementById('resCategory').textContent = data.category || 'N/A';
-        document.getElementById('resService').textContent = data.service || 'N/A';
-        document.getElementById('resSentiment').textContent = data.sentiment || 'N/A';
-        document.getElementById('resConfidence').textContent = (data.confidence || 0) + '%';
-        document.getElementById('resEscalation').textContent = data.escalation || 'No';
-        document.getElementById('resDecisionTrace').textContent = data.decision_trace || 'N/A';
-        
-        // Display new fields
-        const resConfidenceReason = document.getElementById('resConfidenceReason');
-        if (resConfidenceReason) resConfidenceReason.textContent = data.confidence_reason || 'N/A';
-        
-        const resResponseTime = document.getElementById('resResponseTime');
-        if (resResponseTime) resResponseTime.textContent = data.response_time || 'N/A';
+        // Helper to safely set text content
+        const setSafeText = (id, text) => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = text || 'N/A';
+        };
+
+        // Update all fields with null checks
+        setSafeText('resSummary', data.summary);
+        setSafeText('resCategory', data.category);
+        setSafeText('resService', data.service);
+        setSafeText('resSentiment', data.sentiment);
+        setSafeText('resConfidence', (data.confidence || 0) + '%');
+        setSafeText('resEscalation', data.escalation);
+        setSafeText('resDecisionTrace', data.decision_trace);
+        setSafeText('resConfidenceReason', data.confidence_reason);
+        setSafeText('resResponseTime', data.response_time);
         
         const resEscalationPriority = document.getElementById('resEscalationPriority');
         if (resEscalationPriority) {
             resEscalationPriority.textContent = data.escalation_priority || 'Low';
-            // Highlight if High priority
-            resEscalationPriority.className = data.escalation_priority === 'High' ? 'priority-high' : 
-                                              data.escalation_priority === 'Medium' ? 'priority-medium' : 'priority-low';
+            resEscalationPriority.className = 'badge ' + 
+                (data.escalation_priority === 'High' ? 'badge-error' : 
+                 data.escalation_priority === 'Medium' ? 'badge-warning' : 'badge-primary');
         }
         
-        // Display suggested actions as bullet points
         const resSuggestedActions = document.getElementById('resSuggestedActions');
         if (resSuggestedActions && data.suggested_actions) {
             resSuggestedActions.innerHTML = data.suggested_actions
                 .map(action => `<li>${action}</li>`)
                 .join('');
         }
-        
-        const resService = document.getElementById('resService');
-        if (resService) resService.textContent = data.service || 'N/A';
     }
 }
 
