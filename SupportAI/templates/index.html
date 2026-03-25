@@ -371,6 +371,7 @@
 
         <button class="stats-btn" onclick="viewStats()">View Session Stats</button>
         <button class="stats-btn" onclick="showSaveChatDialog()" style="background: #17a2b8; margin-left: 10px;">💾 Save Chat</button>
+        <button class="stats-btn" onclick="showContactModal()" style="background: #ffc107; margin-left: 10px;">📞 Provide Contact</button>
         <div id="statsBox" class="details" style="display:none;"></div>
     </div>
 
@@ -389,6 +390,20 @@
                 <button onclick="closeEscalationModal()">Cancel</button>
             </div>
             <div id="escalationResult" style="margin-top: 15px;"></div>
+        </div>
+    </div>
+
+    <!-- Simple Contact Collection Modal -->
+    <div id="contactModal" class="modal" style="display:none;">
+        <div class="modal-content">
+            <h3>📞 Provide Contact Information</h3>
+            <p style="margin-bottom: 15px; color: #666;">Please enter your email or phone number so we can contact you.</p>
+            <div class="escalation-form">
+                <input type="text" id="simpleContact" placeholder="Enter your email or phone number" style="width: 100%; margin-bottom: 10px;">
+                <button onclick="submitSimpleContact()">Submit Contact</button>
+                <button onclick="closeContactModal()">Skip</button>
+            </div>
+            <div id="contactResult" style="margin-top: 15px;"></div>
         </div>
     </div>
 

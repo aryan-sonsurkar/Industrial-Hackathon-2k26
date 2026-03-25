@@ -110,5 +110,21 @@
       }
     ],
     "transcript": "SUPPORTAI CHAT TRANSCRIPT\nSession ID: 1774348183970\nDate: 2026-03-24 16:00:40\n\n[3:59:50 pm] You: hello\n[4:00:01 pm] You: my website crashed\n[4:00:09 pm] SupportAI: \"Hello! Our company offers Web Development, Mobile App Development, Digital Marketing, and Software Solutions. Which of these services are you interested in learning more about?\"\n[4:00:15 pm] SupportAI: Sorry to hear that your website has crashed. Can you please provide more details about the issue, such as any error messages or recent changes made to the site? This will help me better assist you.\n\n---\nThank you for using SupportAI!\nFor further assistance, contact: aryansonsurkar87@gmail.com"
+  },
+  "1774408693400": {
+    "created_at": "2026-03-25T08:52:18.775557",
+    "conversation": [
+      {
+        "sender": "You",
+        "text": "My website is not working what can be the issue??",
+        "time": "8:48:52 am"
+      },
+      {
+        "sender": "SupportAI",
+        "text": "I'm sorry to hear that your website is not functioning as expected. To help troubleshoot, could you please provide more details about the issue? For example, what error messages do you see, or what happens when you try to access specific pages?",
+        "time": "8:49:00 am"
+      }
+    ],
+    "transcript": "SUPPORTAI CHAT TRANSCRIPT\nSession ID: 1774408693400\nDate: 2026-03-25 08:52:18\n\n[8:48:52 am] You: My website is not working what can be the issue??\n[8:49:00 am] SupportAI: I'm sorry to hear that your website is not functioning as expected. To help troubleshoot, could you please provide more details about the issue? For example, what error messages do you see, or what happens when you try to access specific pages?\n\n---\nThank you for using SupportAI!\nFor further assistance, contact: aryansonsurkar87@gmail.com"
   }
 }

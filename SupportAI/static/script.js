@@ -526,6 +526,81 @@ function closeEscalationModal() {
     }
 }
 
+// Simple Contact Collection Functions
+function showContactModal() {
+    let modal = document.getElementById('contactModal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'contactModal';
+        modal.className = 'modal';
+        modal.style.display = 'none';
+        modal.innerHTML = `
+            <div class="modal-content">
+                <h3>📞 Provide Contact Information</h3>
+                <p style="margin-bottom: 15px; color: #666;">Please enter your email or phone number so we can contact you.</p>
+                <div class="escalation-form">
+                    <input type="text" id="simpleContact" placeholder="Enter your email or phone number" style="width: 100%; margin-bottom: 10px;">
+                    <button onclick="submitSimpleContact()">Submit Contact</button>
+                    <button onclick="closeContactModal()">Skip</button>
+                </div>
+                <div id="contactResult" style="margin-top: 15px;"></div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    }
+    modal.style.display = 'block';
+}
+
+function closeContactModal() {
+    const modal = document.getElementById('contactModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
+async function submitSimpleContact() {
+    const contactInput = document.getElementById('simpleContact');
+    const resultDiv = document.getElementById('contactResult');
+    
+    if (!contactInput || !resultDiv) {
+        console.error('Contact form elements not found');
+        return;
+    }
+    
+    const contact = contactInput.value.trim();
+    
+    if (!contact) {
+        resultDiv.innerHTML = '<div class="error">❌ Please enter your email or phone number</div>';
+        return;
+    }
+    
+    try {
+        const response = await fetch('/collect-contact', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contact: contact })
+        });
+        
+        const data = await response.json();
+        if (data.success) {
+            resultDiv.innerHTML = `<div class="success">✅ ${data.message}</div>`;
+            
+            // Clear input
+            contactInput.value = '';
+            
+            // Close modal after delay
+            setTimeout(() => {
+                closeContactModal();
+            }, 2000);
+        } else {
+            resultDiv.innerHTML = `<div class="error">❌ ${data.error || 'Failed to save contact'}</div>`;
+        }
+    } catch (error) {
+        console.error('Contact submission error:', error);
+        resultDiv.innerHTML = '<div class="error">❌ Failed to save contact. Please try again.</div>';
+    }
+}
+
 function updateContactPlaceholder() {
     const typeSelect = document.getElementById('escalationType');
     const contactInput = document.getElementById('escalationContact');

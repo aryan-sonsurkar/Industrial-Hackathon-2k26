@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SupportAI Admin Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f5f5;
+            color: #333;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 15px;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .controls {
+            padding: 20px;
+            background: white;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .filter-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .filter-btn {
+            padding: 8px 16px;
+            border: 1px solid #ddd;
+            background: white;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .filter-btn:hover {
+            background: #f0f0f0;
+        }
+
+        .filter-btn.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .refresh-btn {
+            padding: 8px 16px;
+            background: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .refresh-btn:hover {
+            background: #218838;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .chats-grid {
+            display: grid;
+            gap: 15px;
+        }
+
+        .chat-card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            border-left: 4px solid #ddd;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .chat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+        }
+
+        .chat-card.escalated {
+            border-left-color: #dc3545;
+            background: #fff5f5;
+        }
+
+        .escalation-badge {
+            display: inline-block;
+            background: #dc3545;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .chat-query {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+            font-size: 1rem;
+        }
+
+        .chat-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 8px;
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .detail-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .detail-label {
+            font-weight: 500;
+            color: #555;
+        }
+
+        .category-technical { color: #007bff; }
+        .category-billing { color: #28a745; }
+        .category-account { color: #ffc107; }
+        .category-general { color: #6c757d; }
+
+        .sentiment-angry { color: #dc3545; }
+        .sentiment-happy { color: #28a745; }
+        .sentiment-neutral { color: #6c757d; }
+
+        .timestamp {
+            color: #999;
+            font-size: 0.8rem;
+            margin-top: 8px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #666;
+        }
+
+        .empty-state h3 {
+            margin-bottom: 10px;
+            color: #999;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px;
+            border: 1px solid #f5c6cb;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.5rem;
+            }
+            
+            .stats {
+                gap: 20px;
+            }
+            
+            .controls {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .filter-buttons {
+                flex-wrap: wrap;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🚀 SupportAI Admin Dashboard</h1>
+        <div class="stats">
+            <div class="stat-item">
+                <div class="stat-number" id="totalChats">0</div>
+                <div class="stat-label">Total Chats</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number" id="escalatedChats">0</div>
+                <div class="stat-label">Escalated</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number" id="activeFilter">All</div>
+                <div class="stat-label">Filter</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="controls">
+        <div class="filter-buttons">
+            <button class="filter-btn active" onclick="filterChats('all')">All</button>
+            <button class="filter-btn" onclick="filterChats('escalated')">Escalated Only</button>
+        </div>
+        <button class="refresh-btn" onclick="refreshChats()">🔄 Refresh</button>
+    </div>
+
+    <div class="container">
+        <div id="chatsContainer">
+            <div class="loading">Loading chat data...</div>
+        </div>
+    </div>
+
+    <script>
+        let allChats = [];
+        let currentFilter = 'all';
+        let autoRefreshInterval;
+
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            loadChats();
+            startAutoRefresh();
+        });
+
+        // Load chat data from API
+        async function loadChats() {
+            try {
+                const response = await fetch('/admin/chats');
+                const data = await response.json();
+                
+                if (data.success) {
+                    allChats = data.chats;
+                    updateStats(data);
+                    renderChats();
+                } else {
+                    showError('Failed to load chat data');
+                }
+            } catch (error) {
+                console.error('Error loading chats:', error);
+                showError('Network error. Please try again.');
+            }
+        }
+
+        // Update statistics
+        function updateStats(data) {
+            document.getElementById('totalChats').textContent = data.total_chats;
+            document.getElementById('escalatedChats').textContent = data.escalated_chats;
+        }
+
+        // Filter chats
+        function filterChats(filter) {
+            currentFilter = filter;
+            
+            // Update active button
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // Update filter display
+            document.getElementById('activeFilter').textContent = 
+                filter === 'all' ? 'All' : 'Escalated';
+            
+            renderChats();
+        }
+
+        // Render chat cards
+        function renderChats() {
+            const container = document.getElementById('chatsContainer');
+            
+            // Filter chats
+            let filteredChats = allChats;
+            if (currentFilter === 'escalated') {
+                filteredChats = allChats.filter(chat => chat.escalation === 'Yes');
+            }
+            
+            // Empty state
+            if (filteredChats.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <h3>No customer interactions yet</h3>
+                        <p>Chat data will appear here when customers start using SupportAI.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            // Render chat cards
+            const chatsHTML = filteredChats.map(chat => createChatCard(chat)).join('');
+            container.innerHTML = `<div class="chats-grid">${chatsHTML}</div>`;
+        }
+
+        // Create individual chat card
+        function createChatCard(chat) {
+            const isEscalated = chat.escalation === 'Yes';
+            const timestamp = formatTimestamp(chat.timestamp);
+            const categoryClass = `category-${(chat.category || 'general').toLowerCase()}`;
+            const sentimentClass = `sentiment-${(chat.sentiment || 'neutral').toLowerCase()}`;
+            
+            return `
+                <div class="chat-card ${isEscalated ? 'escalated' : ''}">
+                    ${isEscalated ? '<div class="escalation-badge">🚨 Escalated</div>' : ''}
+                    <div class="chat-query">${escapeHtml(chat.query)}</div>
+                    <div class="chat-details">
+                        <div class="detail-item">
+                            <span class="detail-label">Category:</span>
+                            <span class="${categoryClass}">${chat.category || 'General'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Sentiment:</span>
+                            <span class="${sentimentClass}">${chat.sentiment || 'Neutral'}</span>
+                        </div>
+                        ${chat.contact ? `
+                        <div class="detail-item">
+                            <span class="detail-label">Contact:</span>
+                            <span>${escapeHtml(chat.contact)}</span>
+                        </div>
+                        ` : ''}
+                        ${chat.ticket_id ? `
+                        <div class="detail-item">
+                            <span class="detail-label">Ticket:</span>
+                            <span>${escapeHtml(chat.ticket_id)}</span>
+                        </div>
+                        ` : ''}
+                    </div>
+                    <div class="timestamp">${timestamp}</div>
+                </div>
+            `;
+        }
+
+        // Format timestamp
+        function formatTimestamp(timestamp) {
+            if (!timestamp) return 'Unknown time';
+            
+            try {
+                const date = new Date(timestamp);
+                return date.toLocaleString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+            } catch (error) {
+                return timestamp;
+            }
+        }
+
+        // Escape HTML to prevent XSS
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Refresh chats manually
+        function refreshChats() {
+            const btn = event.target;
+            btn.textContent = '🔄 Loading...';
+            btn.disabled = true;
+            
+            loadChats().then(() => {
+                btn.textContent = '🔄 Refresh';
+                btn.disabled = false;
+            });
+        }
+
+        // Show error message
+        function showError(message) {
+            const container = document.getElementById('chatsContainer');
+            container.innerHTML = `<div class="error">${message}</div>`;
+        }
+
+        // Start auto-refresh (every 5 seconds)
+        function startAutoRefresh() {
+            autoRefreshInterval = setInterval(() => {
+                loadChats();
+            }, 5000);
+        }
+
+        // Stop auto-refresh when page is hidden
+        document.addEventListener('visibilitychange', function() {
+            if (document.hidden) {
+                clearInterval(autoRefreshInterval);
+            } else {
+                startAutoRefresh();
+            }
+        });
+    </script>
+</body>
+</html>
