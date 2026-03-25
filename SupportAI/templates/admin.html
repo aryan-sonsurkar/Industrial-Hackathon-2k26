@@ -3,55 +3,186 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SupportAI | Admin Dashboard</title>
-    <!-- Google Fonts -->
+    <title>AccuHelp Admin | Dashboard - Accunity Services</title>
+    <meta name="description" content="Admin dashboard for AccuHelp by Accunity Services LLP">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
-    <!-- Font Awesome -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Custom CSS -->
-    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="/static/unified-theme.css">
 </head>
 <body>
-    <div class="container" style="max-width: 1200px;">
-        <div class="admin-header">
-            <h1><i class="fas fa-chart-line"></i> SupportAI Admin Dashboard</h1>
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-val" id="totalChats">0</div>
-                    <div class="stat-label"><i class="fas fa-comments"></i> Total Chats</div>
+    <!-- Navigation -->
+    <header class="app-header">
+        <div class="header-content">
+            <div class="logo">
+                <i class="fas fa-headset"></i>
+                <span>AccuHelp</span>
+            </div>
+            <nav class="header-nav">
+                <a href="/" class="nav-link">
+                    <i class="fas fa-home"></i>
+                    <span>Home</span>
+                </a>
+                <a href="/admin" class="nav-link active">
+                    <i class="fas fa-shield-alt"></i>
+                    <span>Admin</span>
+                </a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero-section admin-hero">
+        <div class="announcement">
+            <i class="fas fa-lock"></i> Admin Dashboard
+        </div>
+        <h1 class="hero-title">Customer Support Analytics</h1>
+        <p class="hero-subtitle">
+            Real-time monitoring and insights for AccuHelp support operations.
+        </p>
+    </section>
+
+    <main class="container">
+        <!-- Statistics Overview -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value" id="totalChats">0</div>
+                <div class="stat-label">
+                    <i class="fas fa-comments"></i> Total Interactions
                 </div>
-                <div class="stat-card">
-                    <div class="stat-val" id="escalatedChats" style="color: var(--error);">0</div>
-                    <div class="stat-label"><i class="fas fa-exclamation-triangle"></i> Escalated</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="escalatedChats" style="color: var(--error);">0</div>
+                <div class="stat-label">
+                    <i class="fas fa-exclamation-triangle"></i> Escalated Cases
                 </div>
-                <div class="stat-card">
-                    <div class="stat-val" id="activeFilter">All</div>
-                    <div class="stat-label"><i class="fas fa-filter"></i> Current View</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="activeFilter">All</div>
+                <div class="stat-label">
+                    <i class="fas fa-filter"></i> Current View
                 </div>
             </div>
         </div>
 
-        <div class="controls" style="display: flex; justify-content: space-between; align-items: center; margin: 2rem 0; background: var(--surface); padding: 1rem; border-radius: var(--radius-md); border: 1px solid var(--glass-border);">
-            <div class="filter-buttons" style="display: flex; gap: 1rem;">
-                <button class="filter-btn active" onclick="filterChats('all')"><i class="fas fa-border-all"></i> All Interactions</button>
-                <button class="filter-btn" onclick="filterChats('escalated')"><i class="fas fa-fire"></i> Escalated Only</button>
+        <!-- Control Panel -->
+        <div class="control-panel">
+            <div class="control-section">
+                <h3><i class="fas fa-filter"></i> Filter Interactions</h3>
+                <div class="button-group">
+                    <button class="btn btn-primary active" onclick="filterChats('all')">
+                        <i class="fas fa-border-all"></i> All
+                    </button>
+                    <button class="btn btn-secondary" onclick="filterChats('escalated')">
+                        <i class="fas fa-fire"></i> Escalated Only
+                    </button>
+                </div>
             </div>
-            <div style="display: flex; gap: 1rem;">
-                <a href="/" class="button stats-btn" style="text-decoration: none;"><i class="fas fa-arrow-left"></i> Live Chat</a>
-                <button class="refresh-btn" onclick="refreshChats()"><i class="fas fa-sync-alt"></i> Refresh</button>
+            
+            <div class="control-section">
+                <h3><i class="fas fa-clock"></i> Time Range</h3>
+                <div class="button-group">
+                    <button class="btn" onclick="filterByTime('1h')">1 Hour</button>
+                    <button class="btn" onclick="filterByTime('12h')">12 Hours</button>
+                    <button class="btn" onclick="filterByTime('1d')">1 Day</button>
+                    <button class="btn" onclick="filterByTime('7d')">7 Days</button>
+                    <button class="btn" onclick="filterByTime('30d')">30 Days</button>
+                    <button class="btn active" onclick="filterByTime('all')">All Time</button>
+                </div>
+            </div>
+            
+            <div class="control-section">
+                <h3><i class="fas fa-cog"></i> Actions</h3>
+                <div class="button-group">
+                    <button class="btn btn-success" onclick="refreshChats()">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                    <a href="/admin/logout" class="btn btn-secondary" style="text-decoration: none;">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </a>
+                    <a href="/" class="btn btn-primary" style="text-decoration: none;">
+                        <i class="fas fa-arrow-left"></i> Back to Chat
+                    </a>
+                </div>
             </div>
         </div>
 
-        <div id="chatsContainer">
-            <div class="loading"><i class="fas fa-spinner fa-spin"></i> Loading analytical data...</div>
+        <!-- Chat Data Display -->
+        <div class="chats-container">
+            <h3 style="margin-bottom: 1.5rem;"><i class="fas fa-list"></i> Customer Interactions</h3>
+            <div id="chatsContainer">
+                <div class="loading">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <p>Loading data...</p>
+                </div>
+            </div>
         </div>
-    </div>
+
+        <!-- Analytics Section -->
+        <section class="features-section" style="margin-top: 3rem;">
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <h3>Average Response Time</h3>
+                    <p style="font-size: 2rem; font-weight: 700; color: var(--accent-primary); margin: 0.5rem 0;">2.3s</p>
+                    <p style="font-size: 0.9rem; color: var(--success);"><i class="fas fa-arrow-down"></i> 15% faster</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-smile"></i>
+                    </div>
+                    <h3>Customer Satisfaction</h3>
+                    <p style="font-size: 2rem; font-weight: 700; color: var(--accent-primary); margin: 0.5rem 0;">94%</p>
+                    <p style="font-size: 0.9rem; color: var(--success);"><i class="fas fa-arrow-up"></i> 3% increase</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                    <h3>AI Resolution Rate</h3>
+                    <p style="font-size: 2rem; font-weight: 700; color: var(--accent-primary); margin: 0.5rem 0;">87%</p>
+                    <p style="font-size: 0.9rem; color: var(--success);"><i class="fas fa-arrow-up"></i> 5% improvement</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+        <div class="footer-content">
+            <div class="footer-logo">
+                <i class="fas fa-headset"></i>
+                <span>AccuHelp</span>
+                <span class="company-tag">by Accunity Services LLP</span>
+            </div>
+            <div class="footer-info">
+                <p>&copy; 2026 Accunity Services LLP. All rights reserved.</p>
+                <p>Professional Admin Dashboard for Customer Service Automation</p>
+                <div class="footer-links-small">
+                    <a href="/">Live Chat</a>
+                    <a href="/admin">Admin</a>
+                    <a href="#">Documentation</a>
+                    <a href="#">Support</a>
+                </div>
+            </div>
+            <div class="footer-links">
+                <a href="https://accunity.com" target="_blank">
+                    <i class="fas fa-globe"></i> Website
+                </a>
+                <a href="#" target="_blank">
+                    <i class="fab fa-linkedin"></i> LinkedIn
+                </a>
+            </div>
+        </div>
+    </footer>
 
     <script>
         let allChats = [];
         let currentFilter = 'all';
+        let currentTimeRange = 'all';
         let autoRefreshInterval;
 
         // Initialize dashboard
@@ -63,7 +194,7 @@
         // Load chat data from API
         async function loadChats() {
             try {
-                const response = await fetch('/admin/chats');
+                const response = await fetch(`/admin/chats?range=${currentTimeRange}`);
                 const data = await response.json();
                 
                 if (data.success) {
@@ -85,28 +216,41 @@
             document.getElementById('escalatedChats').textContent = data.escalated_chats;
         }
 
-        // Filter chats
+        // Filter chats by escalation status
         function filterChats(filter) {
             currentFilter = filter;
             
             // Update active button
-            document.querySelectorAll('.filter-btn').forEach(btn => {
+            document.querySelectorAll('.control-section:first-child .btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.closest('.btn').classList.add('active');
+            
+            // Update filter display
+            document.getElementById('activeFilter').textContent = filter === 'all' ? 'All' : 'Escalated';
+            
+            renderChats();
+        }
+
+        // Filter chats by time range
+        async function filterByTime(range) {
+            currentTimeRange = range;
+            
+            // Update active button
+            document.querySelectorAll('.control-section:nth-child(2) .btn').forEach(btn => {
                 btn.classList.remove('active');
             });
             event.target.classList.add('active');
             
-            // Update filter display
-            document.getElementById('activeFilter').textContent = 
-                filter === 'all' ? 'All' : 'Escalated';
-            
-            renderChats();
+            // Reload chats with new time range
+            await loadChats();
         }
 
         // Render chat cards
         function renderChats() {
             const container = document.getElementById('chatsContainer');
             
-            // Filter chats
+            // Filter chats by escalation status
             let filteredChats = allChats;
             if (currentFilter === 'escalated') {
                 filteredChats = allChats.filter(chat => chat.escalation === 'Yes');
@@ -114,10 +258,15 @@
             
             // Empty state
             if (filteredChats.length === 0) {
+                const emptyMessage = currentTimeRange === 'all' 
+                    ? 'Chat data will appear here when customers start using AccuHelp.'
+                    : `No data available for the selected time range.`;
+                
                 container.innerHTML = `
                     <div class="empty-state">
-                        <h3>No customer interactions yet</h3>
-                        <p>Chat data will appear here when customers start using SupportAI.</p>
+                        <i class="fas fa-inbox"></i>
+                        <h3>No customer interactions found</h3>
+                        <p>${emptyMessage}</p>
                     </div>
                 `;
                 return;
@@ -138,30 +287,32 @@
             return `
                 <div class="chat-card ${isEscalated ? 'escalated' : ''}">
                     ${isEscalated ? '<div class="escalation-badge">🚨 Escalated</div>' : ''}
-                    <div class="chat-query">${escapeHtml(chat.query)}</div>
+                    <div class="chat-header">
+                        <div class="chat-query">${escapeHtml(chat.query)}</div>
+                        <div class="chat-time">${timestamp}</div>
+                    </div>
                     <div class="chat-details">
                         <div class="detail-item">
-                            <span class="detail-label">Category:</span>
+                            <span class="detail-label"><i class="fas fa-tags"></i> Category:</span>
                             <span class="${categoryClass}">${chat.category || 'General'}</span>
                         </div>
                         <div class="detail-item">
-                            <span class="detail-label">Sentiment:</span>
+                            <span class="detail-label"><i class="fas fa-smile"></i> Sentiment:</span>
                             <span class="${sentimentClass}">${chat.sentiment || 'Neutral'}</span>
                         </div>
                         ${chat.contact ? `
                         <div class="detail-item">
-                            <span class="detail-label">Contact:</span>
+                            <span class="detail-label"><i class="fas fa-address-book"></i> Contact:</span>
                             <span>${escapeHtml(chat.contact)}</span>
                         </div>
                         ` : ''}
                         ${chat.ticket_id ? `
                         <div class="detail-item">
-                            <span class="detail-label">Ticket:</span>
+                            <span class="detail-label"><i class="fas fa-ticket"></i> Ticket:</span>
                             <span>${escapeHtml(chat.ticket_id)}</span>
                         </div>
                         ` : ''}
                     </div>
-                    <div class="timestamp">${timestamp}</div>
                 </div>
             `;
         }
@@ -192,12 +343,13 @@
 
         // Refresh chats manually
         function refreshChats() {
-            const btn = event.target;
-            btn.textContent = '🔄 Loading...';
+            const btn = event.target.closest('.btn');
+            const originalHTML = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
             btn.disabled = true;
             
             loadChats().then(() => {
-                btn.textContent = '🔄 Refresh';
+                btn.innerHTML = originalHTML;
                 btn.disabled = false;
             });
         }

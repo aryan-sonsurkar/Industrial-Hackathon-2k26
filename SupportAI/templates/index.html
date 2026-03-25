@@ -3,108 +3,362 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SupportAI | Intelligent Customer Service</title>
-    <!-- Google Fonts -->
+    <title>AccuHelp | SmartAssist AI - Intelligent Customer Service</title>
+    <meta name="description" content="AI-powered customer support automation by Accunity Services LLP">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
-    <!-- Font Awesome -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Custom CSS -->
-    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="/static/unified-theme.css">
 </head>
 <body>
-    <div class="container">
-        <h1><i class="fas fa-headset"></i> SupportAI</h1>
-        
-        <div class="call-simulation" id="callSimulation">
-            <div id="callStatus"><i class="fas fa-robot"></i> AI Agent Ready - Click "Start Call" to begin</div>
-            <div class="call-timer" id="callTimer" style="display:none;">0:00</div>
-        </div>
-
-        <div class="voice-controls">
-            <button class="call-btn" id="callBtn" onclick="toggleCallMode()" title="Start Voice Call">
-                <i class="fas fa-phone-alt"></i> Start Call
-            </button>
-            <button class="mic-btn" id="micBtn" onclick="toggleVoiceMode()" title="Quick Voice Input">
-                <i class="fas fa-microphone"></i>
-            </button>
-            <div class="voice-status" id="voiceStatus" style="display:none;">Ready</div>
-        </div>
-        
-        <div class="chat-box" id="chatWindow">
-            <div class="bot-msg msg"><i class="fas fa-robot"></i> Welcome to SupportAI! How can I assist you today?</div>
-        </div>
-
-        <div class="input-group" id="textInputGroup">
-            <input type="text" id="userInput" placeholder="Ask anything about our industrial solutions..." onkeypress="handleKeyPress(event)">
-            <button onclick="sendMessage()"><i class="fas fa-paper-plane"></i> Send</button>
-        </div>
-        
-        <div id="voiceTranscript" class="transcript" style="display:none; text-align: center; margin-bottom: 1rem; color: var(--text-muted);"></div>
-
-        <div class="details" id="aiDetails" style="display:none;">
-            <h3><i class="fas fa-bolt"></i> AI Analysis Breakdown</h3>
-            
-            <div class="detail-item summary-box" style="margin-top: 1rem;">
-                <strong><i class="fas fa-info-circle"></i> Issue Summary:</strong>
-                <span id="resSummary" style="color: var(--text);"></span>
+    <!-- Navigation -->
+    <header class="app-header">
+        <div class="header-content">
+            <div class="logo">
+                <i class="fas fa-headset"></i>
+                <span>AccuHelp</span>
             </div>
-            
-            <div class="detail-item"><strong><i class="fas fa-tags"></i> Category:</strong> <span id="resCategory"></span></div>
-            <div class="detail-item"><strong><i class="fas fa-cogs"></i> Service:</strong> <span id="resService"></span></div>
-            <div class="detail-item"><strong><i class="fas fa-smile"></i> Sentiment:</strong> <span id="resSentiment"></span></div>
-            <div class="detail-item"><strong><i class="fas fa-bullseye"></i> Confidence:</strong> <span id="resConfidence"></span></div>
-            <div class="detail-item"><strong><i class="fas fa-brain"></i> Reason:</strong> <span id="resConfidenceReason" style="font-style: italic;"></span></div>
-            <div class="detail-item"><strong><i class="fas fa-stopwatch"></i> Response Time:</strong> <span id="resResponseTime"></span></div>
-            <div class="detail-item"><strong><i class="fas fa-rocket"></i> Escalation:</strong> <span id="resEscalation"></span></div>
-            <div class="detail-item"><strong><i class="fas fa-layer-group"></i> Priority:</strong> <span id="resEscalationPriority"></span></div>
-            
-            <div class="detail-item" style="flex-direction: column; align-items: flex-start; gap: 0.5rem; border-bottom: none;">
-                <strong><i class="fas fa-tasks"></i> Suggested Actions:</strong>
-                <ul id="resSuggestedActions" style="width: 100%; padding-left: 1.5rem; margin-top: 0.5rem;"></ul>
+            <nav class="header-nav">
+                <a href="/" class="nav-link active">
+                    <i class="fas fa-home"></i>
+                    <span>Home</span>
+                </a>
+                <a href="/admin" class="nav-link">
+                    <i class="fas fa-shield-alt"></i>
+                    <span>Admin</span>
+                </a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero-section">
+        <div class="announcement">
+            <i class="fas fa-sparkles"></i> Introducing SmartAssist AI
+        </div>
+        <h1 class="hero-title">Support Automation for Faster Resolutions</h1>
+        <p class="hero-subtitle">
+            AccuHelp provides instant AI-driven support and, when needed, seamlessly escalates to human help.
+        </p>
+    </section>
+
+    <main class="container">
+        <!-- Chat Interface -->
+        <div class="chat-interface">
+            <div class="chat-box" id="chatWindow">
+                <div class="msg bot-msg">
+                    <i class="fas fa-robot"></i>
+                    <div>
+                        <strong>AccuHelp AI</strong><br>
+                        Welcome! I'm your intelligent assistant. How can I help you today?
+                    </div>
+                </div>
+            </div>
+
+            <!-- Voice Controls -->
+            <div class="voice-controls">
+                <button class="voice-btn" id="callBtn" onclick="toggleCallMode()">
+                    <i class="fas fa-phone-alt"></i>
+                    <span>Start Voice Call</span>
+                </button>
+                <button class="voice-btn" id="micBtn" onclick="toggleVoiceMode()">
+                    <i class="fas fa-microphone"></i>
+                    <span>Voice Input</span>
+                </button>
+            </div>
+
+            <!-- Input Area -->
+            <div class="input-section">
+                <i class="fas fa-paperclip input-icon"></i>
+                <input type="text" id="userInput" placeholder="How can AccuHelp assist you today?" onkeypress="handleKeyPress(event)">
+                <i class="fas fa-microphone input-icon" id="micIcon" onclick="toggleVoiceMode()"></i>
+                <button class="send-btn" onclick="sendMessage()">
+                    <i class="fas fa-paper-plane"></i>
+                    <span>Send</span>
+                </button>
             </div>
         </div>
-        
-        <div style="margin-top: 1.5rem; text-align: center;">
-            <button class="button stats-btn" onclick="location.href='/admin'"><i class="fas fa-user-shield"></i> Admin Panel</button>
-            <button class="button stats-btn" onclick="showSaveChatDialog()" style="background: var(--info); color: white; margin-left: 0.5rem;"><i class="fas fa-save"></i> Save Chat</button>
-            <button class="button stats-btn" onclick="showContactModal()" style="background: var(--warning); color: #1e293b; margin-left: 0.5rem;"><i class="fas fa-id-card"></i> Add Contact</button>
-        </div>
-    </div>
 
-    <!-- Modals (Escalation, Contact, Save) remain the same functionality but get style.css styling -->
-    <div id="escalationModal" class="modal">
-        <div class="modal-content">
-            <h3><i class="fas fa-exclamation-circle"></i> Human Intervention Required</h3>
-            <div class="escalation-form" style="display: flex; flex-direction: column; gap: 1rem; margin-top: 1rem;">
-                <input type="text" id="escalationName" placeholder="Enter your full name">
-                <select id="escalationType" onchange="updateContactPlaceholder()" style="padding: 0.75rem; background: var(--surface); color: var(--text); border: 1px solid var(--glass-border); border-radius: var(--radius-md);">
-                    <option value="email">📧 Email Response</option>
-                    <option value="phone">📱 WhatsApp / Call</option>
+        <!-- AI Analysis Panel -->
+        <div class="analysis-panel hidden" id="aiDetails">
+            <h3><i class="fas fa-brain"></i> AI Analysis & Insights</h3>
+            <div class="analysis-grid">
+                <div class="glass-card">
+                    <div class="analysis-item">
+                        <span class="detail-label"><i class="fas fa-info-circle"></i> Issue Summary:</span>
+                        <span id="resSummary">Analyzing...</span>
+                    </div>
+                    <div class="analysis-item">
+                        <span class="detail-label"><i class="fas fa-tags"></i> Category:</span>
+                        <span id="resCategory" class="badge badge-primary">Processing...</span>
+                    </div>
+                    <div class="analysis-item">
+                        <span class="detail-label"><i class="fas fa-cogs"></i> Service:</span>
+                        <span id="resService">Identifying...</span>
+                    </div>
+                    <div class="analysis-item">
+                        <span class="detail-label"><i class="fas fa-smile"></i> Sentiment:</span>
+                        <span id="resSentiment" class="badge badge-secondary">Analyzing...</span>
+                    </div>
+                </div>
+                <div class="glass-card">
+                    <div class="analysis-item">
+                        <span class="detail-label"><i class="fas fa-bullseye"></i> Confidence:</span>
+                        <span id="resConfidence">0%</span>
+                    </div>
+                    <div class="analysis-item">
+                        <span class="detail-label"><i class="fas fa-brain"></i> Reason:</span>
+                        <span id="resConfidenceReason">Processing...</span>
+                    </div>
+                    <div class="analysis-item">
+                        <span class="detail-label"><i class="fas fa-stopwatch"></i> Response Time:</span>
+                        <span id="resResponseTime">Calculating...</span>
+                    </div>
+                    <div class="analysis-item">
+                        <span class="detail-label"><i class="fas fa-rocket"></i> Escalation:</span>
+                        <span id="resEscalation" class="badge badge-success">No</span>
+                    </div>
+                </div>
+            </div>
+            <div class="glass-card mt-2">
+                <div class="analysis-item">
+                    <span class="detail-label"><i class="fas fa-layer-group"></i> Priority Level:</span>
+                    <span id="resEscalationPriority" class="badge badge-primary">Low</span>
+                </div>
+                <div class="mt-2">
+                    <strong><i class="fas fa-tasks"></i> Recommended Actions:</strong>
+                    <ul id="resSuggestedActions" style="margin-top: 0.5rem; padding-left: 1.5rem; color: var(--text-secondary);">
+                        <li>Processing your request...</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Suggested Actions -->
+        <div class="suggested-actions">
+            <button class="action-chip" onclick="sendSuggestedMessage('Troubleshoot website issues')">
+                Troubleshoot website issues
+            </button>
+            <button class="action-chip" onclick="sendSuggestedMessage('Understand my bill')">
+                Understand my bill
+            </button>
+            <button class="action-chip" onclick="sendSuggestedMessage('Update my subscription')">
+                Update my subscription
+            </button>
+            <button class="action-chip" onclick="sendSuggestedMessage('Contact human agent')">
+                Contact human agent
+            </button>
+        </div>
+
+        <!-- Features Section -->
+        <section class="features-section">
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                    <h3>Instant Responses</h3>
+                    <p>Get answers to common questions in seconds with our AI-powered system.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <h3>Fast Escalation</h3>
+                    <p>When needed, escalate to a human agent quickly for complex issues.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-shield-alt"></i>
+                    </div>
+                    <h3>Billing Assistance</h3>
+                    <p>Get help with bills, invoices, and subscription management.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <h3>Technical Support</h3>
+                    <p>Diagnose and resolve website or technical issues efficiently.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Action Buttons -->
+        <div class="suggested-actions" style="margin-top: 2rem;">
+            <button class="action-chip" onclick="showSaveChatDialog()">
+                <i class="fas fa-save"></i> Save Conversation
+            </button>
+            <button class="action-chip" onclick="showContactModal()">
+                <i class="fas fa-id-card"></i> Provide Contact
+            </button>
+            <a href="/admin" class="action-chip" style="text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem;">
+                <i class="fas fa-shield-alt"></i> Admin Dashboard
+            </a>
+        </div>
+    </main>
+
+    <!-- Modals -->
+    <div class="modal-overlay" id="escalationModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3><i class="fas fa-exclamation-circle"></i> Human Intervention Required</h3>
+                <p>Our AI has detected that your request needs human expertise. Please provide your details.</p>
+            </div>
+            <div class="form-group">
+                <label><i class="fas fa-user"></i> Full Name</label>
+                <input type="text" id="escalationName" placeholder="Enter your full name" required>
+            </div>
+            <div class="form-group">
+                <label><i class="fas fa-envelope"></i> Contact Method</label>
+                <select id="escalationType" onchange="updateContactPlaceholder()">
+                    <option value="email">Email Response</option>
+                    <option value="phone">WhatsApp / Call</option>
                 </select>
-                <input type="text" id="escalationContact" placeholder="Enter contact information">
-                <button onclick="submitEscalation()"><i class="fas fa-check"></i> Request Human Agent</button>
-                <button onclick="closeEscalationModal()" class="stats-btn">Cancel</button>
             </div>
-            <div id="escalationResult" style="margin-top: 1rem;"></div>
+            <div class="form-group">
+                <label><i class="fas fa-address-book"></i> Contact Information</label>
+                <input type="text" id="escalationContact" placeholder="Enter your email or phone number">
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-primary" onclick="submitEscalation()">
+                    <i class="fas fa-check"></i> Request Agent
+                </button>
+                <button class="btn btn-secondary" onclick="closeEscalationModal()">
+                    <i class="fas fa-times"></i> Cancel
+                </button>
+            </div>
+            <div id="escalationResult"></div>
         </div>
     </div>
 
-    <div id="contactModal" class="modal">
-        <div class="modal-content">
-            <h3><i class="fas fa-address-book"></i> Stay in Touch</h3>
-            <p style="margin: 1rem 0; color: var(--text-muted);">Our team can follow up with more details.</p>
-            <div class="escalation-form" style="display: flex; flex-direction: column; gap: 1rem;">
-                <input type="text" id="simpleContact" placeholder="Email or Phone Number">
-                <button onclick="submitSimpleContact()"><i class="fas fa-paper-plane"></i> Save Info</button>
-                <button onclick="closeContactModal()" class="stats-btn">Dismiss</button>
+    <div class="modal-overlay" id="contactModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3><i class="fas fa-address-book"></i> Stay Connected</h3>
+                <p>Provide your contact information for personalized support.</p>
             </div>
-            <div id="contactResult" style="margin-top: 1rem;"></div>
+            <div class="form-group">
+                <label><i class="fas fa-envelope"></i> Email or Phone</label>
+                <input type="text" id="simpleContact" placeholder="Enter your email or phone number">
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-primary" onclick="submitSimpleContact()">
+                    <i class="fas fa-paper-plane"></i> Save Info
+                </button>
+                <button class="btn btn-secondary" onclick="closeContactModal()">
+                    <i class="fas fa-times"></i> Skip
+                </button>
+            </div>
+            <div id="contactResult"></div>
         </div>
     </div>
+
+    <div class="modal-overlay" id="saveChatModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3><i class="fas fa-save"></i> Save Conversation</h3>
+                <p>Would you like to save this conversation for future reference?</p>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-primary" onclick="saveChat('email')">
+                    <i class="fas fa-envelope"></i> Email
+                </button>
+                <button class="btn btn-secondary" onclick="saveChat('whatsapp')">
+                    <i class="fab fa-whatsapp"></i> WhatsApp
+                </button>
+                <button class="btn" onclick="closeSaveChatModal()">
+                    <i class="fas fa-times"></i> Cancel
+                </button>
+            </div>
+            <div id="saveChatForm" class="hidden">
+                <div class="form-group">
+                    <label><i class="fas fa-envelope"></i> Send To</label>
+                    <input type="text" id="saveContact" placeholder="Enter email or phone number">
+                </div>
+                <button class="btn btn-primary" onclick="submitSaveChat()" style="width: 100%;">
+                    <i class="fas fa-paper-plane"></i> Send Now
+                </button>
+            </div>
+            <div id="saveChatResult"></div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+        <div class="footer-content">
+            <div class="footer-logo">
+                <i class="fas fa-headset"></i>
+                <span>AccuHelp</span>
+                <span class="company-tag">by Accunity Services LLP</span>
+            </div>
+            <div class="footer-info">
+                <p>&copy; 2026 Accunity Services LLP. All rights reserved.</p>
+                <p>Intelligent Customer Service Automation Platform</p>
+                <div class="footer-links-small">
+                    <a href="/">Home</a>
+                    <a href="/admin">Admin</a>
+                    <a href="#">About</a>
+                    <a href="#">Contact</a>
+                </div>
+            </div>
+            <div class="footer-links">
+                <a href="https://accunity.com" target="_blank">
+                    <i class="fas fa-globe"></i> Website
+                </a>
+                <a href="#" target="_blank">
+                    <i class="fab fa-linkedin"></i> LinkedIn
+                </a>
+            </div>
+        </div>
+    </footer>
 
     <script src="/static/script.js"></script>
+    <script>
+        // Suggested message handler
+        function sendSuggestedMessage(message) {
+            const userInput = document.getElementById('userInput');
+            userInput.value = message;
+            sendMessage();
+        }
+
+        // Modal functions (additional to script.js)
+        function showSaveChatDialog() {
+            document.getElementById('saveChatModal').classList.add('active');
+        }
+
+        function closeSaveChatModal() {
+            document.getElementById('saveChatModal').classList.remove('active');
+        }
+
+        function showContactModal() {
+            document.getElementById('contactModal').classList.add('active');
+        }
+
+        function closeContactModal() {
+            document.getElementById('contactModal').classList.remove('active');
+        }
+
+        function closeEscalationModal() {
+            document.getElementById('escalationModal').classList.remove('active');
+        }
+
+        // Update placeholder based on contact method
+        function updateContactPlaceholder() {
+            const type = document.getElementById('escalationType').value;
+            const input = document.getElementById('escalationContact');
+            input.placeholder = type === 'email' ? 'Enter your email address' : 'Enter your phone number';
+        }
+
+        // Close modals on overlay click
+        document.querySelectorAll('.modal-overlay').forEach(overlay => {
+            overlay.addEventListener('click', function(e) {
+                if (e.target === this) {
+                    this.classList.remove('active');
+                }
+            });
+        });
+    </script>
 </body>
-</html>
 </html>

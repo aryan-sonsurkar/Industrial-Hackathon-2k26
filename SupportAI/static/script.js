@@ -923,5 +923,31 @@ window.addEventListener('load', function() {
     const micBtn = document.getElementById('micBtn');
     if (micBtn) micBtn.addEventListener('click', toggleVoiceMode);
     
+    // Check for initial query from landing page
+    checkInitialQuery();
+    
     console.log('✅ SupportAI initialized');
 });
+
+// Check for initial query from landing page
+function checkInitialQuery() {
+    // Try to get initial query from session storage or URL parameter
+    const urlParams = new URLSearchParams(window.location.search);
+    const initialQuery = urlParams.get('query') || sessionStorage.getItem('initialQuery');
+    
+    if (initialQuery) {
+        console.log('🎯 Initial query detected:', initialQuery);
+        
+        // Clear the stored query
+        sessionStorage.removeItem('initialQuery');
+        
+        // Auto-fill the input and send message after a short delay
+        const userInput = document.getElementById('userInput');
+        if (userInput) {
+            userInput.value = initialQuery;
+            setTimeout(() => {
+                sendMessage();
+            }, 1000);
+        }
+    }
+}

@@ -25,9 +25,11 @@ Start the Flask server:
 python app.py
 ```
 
-### 5. Access the Dashboard
+### 5. Access the Application
 Open your web browser and go to:
-[http://127.0.0.1:5000](http://127.0.0.1:5000)
+- **Main Chat Interface**: [http://127.0.0.1:5000](http://127.0.0.1:5000)
+- **New Landing Page**: [http://127.0.0.1:5000/landing](http://127.0.0.1:5000/landing)
+- **Admin Dashboard**: [http://127.0.0.1:5000/admin](http://127.0.0.1:5000/admin) (Password: `accunity123`)
 
 ## How It Works
 - **Intelligent Classification**: The AI classifies user queries into Billing, Technical, Account, or General support categories.

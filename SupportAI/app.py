@@ -4,14 +4,27 @@ import time
 import requests
 import re
 from datetime import datetime, timedelta
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, session, redirect, url_for
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from email.utils import formataddr
-import urllib.parse
+from flask_cors import CORS
 
 app = Flask(__name__)
+app.secret_key = 'accunity_admin_session_2026_hackathon_secure'
+
+# Enable CORS for all routes
+CORS(app, resources={
+    r"/*": {
+        "origins": "*",
+        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        "allow_headers": ["Content-Type", "Authorization", "Accept"]
+    }
+})
+
+# Admin Configuration
+ADMIN_PASSWORD = 'accunity123'  # Simple password for hackathon
 
 # Constants
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -28,7 +41,7 @@ SMTP_PORT = 587
 SMTP_USERNAME = "accunityserviceai@gmail.com"
 SMTP_PASSWORD = "tarv zmfz juhz zkkq"  # Gmail app password
 FROM_EMAIL = "accunityserviceai@gmail.com"
-FROM_NAME = "SupportAI"
+FROM_NAME = "AccuHelp"
 
 # Initialize data directory and files
 os.makedirs(DATA_DIR, exist_ok=True)
@@ -719,6 +732,11 @@ User Query: {user_input}"""
 
 @app.route('/')
 def index():
+    # Check if user is coming from landing page with a query
+    query = request.args.get('query', '')
+    if query:
+        # Store the query in session for the chat interface to use
+        session['initial_query'] = query
     return render_template('index.html')
 
 @app.route('/chat', methods=['POST'])
@@ -1418,12 +1436,38 @@ def save_chat():
         return jsonify({"error": "Invalid save method", "success": False}), 400
 
 # ============================================
+# ADMIN AUTHENTICATION ROUTES
+# ============================================
+
+@app.route('/admin/login', methods=['GET', 'POST'])
+def admin_login():
+    """Admin login page and authentication."""
+    if request.method == 'POST':
+        password = request.form.get('password', '')
+        if password == ADMIN_PASSWORD:
+            session['admin_logged_in'] = True
+            session['login_time'] = datetime.now().isoformat()
+            return redirect(url_for('admin_dashboard'))
+        else:
+            return render_template('admin_login.html', error='Invalid password')
+    
+    return render_template('admin_login.html')
+
+@app.route('/admin/logout')
+def admin_logout():
+    """Admin logout."""
+    session.clear()
+    return redirect(url_for('admin_login'))
+
 # ADMIN DASHBOARD ROUTES
 # ============================================
 
 @app.route('/admin')
 def admin_dashboard():
     """Admin dashboard page for monitoring customer chats and escalations."""
+    if not session.get('admin_logged_in'):
+        return redirect(url_for('admin_login'))
+    
     print("🔧 DEBUG: Admin dashboard route accessed")
     try:
         return render_template('admin.html')
@@ -1433,8 +1477,30 @@ def admin_dashboard():
 
 @app.route('/admin/chats')
 def admin_chats():
-    """API endpoint to fetch all chat data for admin dashboard."""
+    """API endpoint to fetch all chat data for admin dashboard with time filtering."""
+    if not session.get('admin_logged_in'):
+        return jsonify({'success': False, 'error': 'Unauthorized'}), 401
+    
     try:
+        # Get time range parameter
+        time_range = request.args.get('range', 'all')
+        current_time = datetime.now()
+        
+        # Calculate time filter
+        time_filter = None
+        if time_range != 'all':
+            if time_range == '1h':
+                time_filter = current_time - timedelta(hours=1)
+            elif time_range == '12h':
+                time_filter = current_time - timedelta(hours=12)
+            elif time_range == '1d':
+                time_filter = current_time - timedelta(days=1)
+            elif time_range == '7d':
+                time_filter = current_time - timedelta(days=7)
+            elif time_range == '14d':
+                time_filter = current_time - timedelta(days=14)
+            elif time_range == '30d':
+                time_filter = current_time - timedelta(days=30)
         # Read chat history from history.json
         with open(HISTORY_FILE, 'r') as f:
             history = json.load(f)
@@ -1463,7 +1529,16 @@ def admin_chats():
                     'timestamp': item.get('timestamp', ''),
                     'sentiment': item.get('sentiment', 'Neutral')
                 }
-                all_chats.append(chat_data)
+                # Apply time filter
+                if time_filter and chat_data.get('timestamp'):
+                    try:
+                        chat_time = datetime.fromisoformat(chat_data['timestamp'].replace('Z', '+00:00'))
+                        if chat_time >= time_filter:
+                            all_chats.append(chat_data)
+                    except:
+                        all_chats.append(chat_data)  # Include if timestamp parsing fails
+                elif not time_filter:
+                    all_chats.append(chat_data)
         
         # Add escalation data
         for item in escalation_data:
@@ -1478,7 +1553,16 @@ def admin_chats():
                     'ticket_id': item.get('ticket_id', ''),
                     'sentiment': item.get('sentiment', 'Neutral')
                 }
-                all_chats.append(chat_data)
+                # Apply time filter
+                if time_filter and chat_data.get('timestamp'):
+                    try:
+                        chat_time = datetime.fromisoformat(chat_data['timestamp'].replace('Z', '+00:00'))
+                        if chat_time >= time_filter:
+                            all_chats.append(chat_data)
+                    except:
+                        all_chats.append(chat_data)  # Include if timestamp parsing fails
+                elif not time_filter:
+                    all_chats.append(chat_data)
         
         # Sort by timestamp (newest first)
         all_chats.sort(key=lambda x: x.get('timestamp', ''), reverse=True)
@@ -1487,7 +1571,9 @@ def admin_chats():
             'success': True,
             'chats': all_chats,
             'total_chats': len(all_chats),
-            'escalated_chats': len([c for c in all_chats if c.get('escalation') == 'Yes'])
+            'escalated_chats': len([c for c in all_chats if c.get('escalation') == 'Yes']),
+            'time_range': time_range,
+            'filtered': time_filter is not None
         })
         
     except Exception as e:
@@ -1498,7 +1584,24 @@ def admin_chats():
             'chats': []
         })
 
+@app.route('/health')
+def health_check():
+    """Health check endpoint for deployment monitoring."""
+    return jsonify({
+        'status': 'healthy',
+        'timestamp': datetime.now().isoformat(),
+        'service': 'AccuHelp API'
+    })
+
 if __name__ == '__main__':
-    print("🚀 Starting SupportAI Server...")
-    print("📧 Admin Dashboard available at: http://127.0.0.1:5000/admin")
-    app.run(debug=True, port=5000)
+    # Get configuration from environment variables for deployment compatibility
+    port = int(os.environ.get('PORT', 5000))
+    debug = os.environ.get('FLASK_DEBUG', 'True').lower() == 'true'
+    host = os.environ.get('FLASK_HOST', '0.0.0.0')  # Bind to all interfaces for deployment
+    
+    print(f"🚀 Starting AccuHelp Server...")
+    print(f"📧 Admin Dashboard available at: http://localhost:{port}/admin")
+    print(f"🌐 Server running on http://{host}:{port}")
+    print(f"🔧 Debug mode: {debug}")
+    
+    app.run(debug=debug, host=host, port=port)
