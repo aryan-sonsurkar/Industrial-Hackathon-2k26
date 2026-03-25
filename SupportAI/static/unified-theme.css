@@ -155,7 +155,142 @@ body {
     box-shadow: var(--shadow-glow);
 }
 
-/* Chat Interface */
+/* Button Styles */
+.btn {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    text-decoration: none;
+    font-size: 0.95rem;
+    min-height: 44px;
+    position: relative;
+    overflow: hidden;
+}
+
+.btn:hover {
+    background: var(--glass-hover);
+    border-color: var(--accent-primary);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(74, 158, 255, 0.3);
+}
+
+.btn:active {
+    transform: translateY(0);
+}
+
+.btn-primary {
+    background: var(--accent-gradient);
+    border-color: transparent;
+    color: white;
+}
+
+.btn-primary:hover {
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.btn-secondary {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: var(--glass-border);
+}
+
+.btn-success {
+    background: rgba(16, 185, 129, 0.2);
+    border-color: var(--success);
+    color: var(--success);
+}
+
+.btn-success:hover {
+    background: rgba(16, 185, 129, 0.3);
+}
+
+.btn.active {
+    background: var(--accent-gradient);
+    border-color: transparent;
+}
+
+/* Button Groups */
+.button-group {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.action-chip {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    color: var(--text-secondary);
+    padding: 0.75rem 1.5rem;
+    border-radius: 25px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: 500;
+    backdrop-filter: blur(10px);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    text-decoration: none;
+    font-size: 0.9rem;
+}
+
+.action-chip:hover {
+    background: rgba(74, 158, 255, 0.2);
+    border-color: var(--accent-primary);
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(74, 158, 255, 0.3);
+}
+
+.suggested-actions {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 3rem;
+}
+
+/* Voice Controls */
+.voice-controls {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.voice-btn {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border-radius: 12px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-height: 44px;
+}
+
+.voice-btn:hover {
+    background: var(--glass-hover);
+    border-color: var(--accent-primary);
+    transform: translateY(-2px);
+}
+
+.voice-btn.active {
+    background: var(--accent-gradient);
+    border-color: transparent;
+}
 .chat-interface {
     max-width: 900px;
     margin: 0 auto 3rem;
@@ -213,6 +348,8 @@ body {
     gap: 1rem;
     backdrop-filter: blur(10px);
     box-shadow: var(--shadow);
+    max-width: 700px;
+    margin: 0 auto 1.5rem;
 }
 
 .input-section input {
@@ -222,7 +359,7 @@ body {
     color: white;
     font-size: 1rem;
     outline: none;
-    padding: 0.5rem;
+    padding: 0.5rem 0;
 }
 
 .input-section input::placeholder {
@@ -234,6 +371,7 @@ body {
     font-size: 1.2rem;
     cursor: pointer;
     transition: color 0.3s ease;
+    padding: 0.5rem;
 }
 
 .input-icon:hover {
@@ -252,6 +390,8 @@ body {
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    font-size: 0.95rem;
+    min-height: 44px;
 }
 
 .send-btn:hover {

@@ -524,7 +524,7 @@ function showEscalationDialog(data) {
             </div>`;
         document.body.appendChild(modal);
     }
-    modal.style.display = 'block';
+    modal.classList.add('active');
     modal.dataset.category = data.category;
     modal.dataset.sentiment = data.sentiment;
     modal.dataset.issue = data.issue;
@@ -533,7 +533,7 @@ function showEscalationDialog(data) {
 function closeEscalationModal() {
     const modal = document.getElementById('escalationModal');
     if (modal) {
-        modal.style.display = 'none';
+        modal.classList.remove('active');
     }
 }
 
@@ -559,13 +559,13 @@ function showContactModal() {
         `;
         document.body.appendChild(modal);
     }
-    modal.style.display = 'block';
+    modal.classList.add('active');
 }
 
 function closeContactModal() {
     const modal = document.getElementById('contactModal');
     if (modal) {
-        modal.style.display = 'none';
+        modal.classList.remove('active');
     }
 }
 
@@ -779,7 +779,10 @@ function saveChat(method) {
 }
 
 function closeSaveChatModal() {
-    document.getElementById('saveChatModal').style.display = 'none';
+    const modal = document.getElementById('saveChatModal');
+    if (modal) {
+        modal.classList.remove('active');
+    }
 }
 
 async function submitSaveChat() {
