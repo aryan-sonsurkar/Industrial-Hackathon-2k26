@@ -3,410 +3,108 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SupportAI - Customer Support Automation</title>
-    <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f4f7f6;
-            margin: 0;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-        .container {
-            width: 100%;
-            max-width: 800px;
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-        h1 { color: #333; text-align: center; }
-        .chat-box {
-            height: 300px;
-            overflow-y: auto;
-            border: 1px solid #ddd;
-            padding: 15px;
-            margin-bottom: 20px;
-            border-radius: 5px;
-            background: #fafafa;
-        }
-        .user-msg { color: #007bff; font-weight: bold; margin-bottom: 5px; }
-        .bot-msg { color: #28a745; margin-bottom: 15px; }
-        .input-group { display: flex; gap: 10px; }
-        input[type="text"] {
-            flex-grow: 1;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-        }
-        button {
-            padding: 10px 20px;
-            background-color: #007bff;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        button:hover { background-color: #0056b3; }
-        .details {
-            margin-top: 20px;
-            padding: 15px;
-            background: #e9ecef;
-            border-radius: 5px;
-            font-size: 0.9em;
-        }
-        .detail-item { margin-bottom: 5px; }
-        .escalation-yes { color: #dc3545; font-weight: bold; }
-        .escalation-no { color: #28a745; font-weight: bold; }
-        .stats-btn {
-            margin-top: 10px;
-            background-color: #6c757d;
-        }
-        .voice-controls {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 10px;
-        }
-        .mic-btn {
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            font-size: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.3s ease;
-        }
-        .mic-btn.active {
-            background-color: #dc3545;
-            animation: pulse 1.5s infinite;
-        }
-        .mic-btn:hover:not(.active) {
-            background-color: #0056b3;
-            transform: scale(1.05);
-        }
-        @keyframes pulse {
-            0% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7); }
-            70% { box-shadow: 0 0 0 10px rgba(220, 53, 69, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
-        }
-        .voice-status {
-            padding: 8px 15px;
-            border-radius: 20px;
-            font-size: 14px;
-            font-weight: bold;
-            display: none;
-        }
-        .voice-status.listening {
-            background-color: #28a745;
-            color: white;
-            display: inline-block;
-        }
-        .voice-status.processing {
-            background-color: #ffc107;
-            color: #333;
-            display: inline-block;
-        }
-        .voice-status.speaking {
-            background-color: #17a2b8;
-            color: white;
-            display: inline-block;
-        }
-        .voice-status.error {
-            background-color: #dc3545;
-            color: white;
-            display: inline-block;
-        }
-        .transcript {
-            font-style: italic;
-            color: #666;
-            margin-bottom: 5px;
-            font-size: 12px;
-        }
-        .call-simulation {
-            text-align: center;
-            padding: 10px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border-radius: 10px;
-            margin-bottom: 15px;
-            font-weight: bold;
-            display: none;
-        }
-        .call-simulation.active {
-            display: block;
-            animation: fadeIn 0.5s ease;
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .voice-toggle {
-            background-color: #28a745;
-            margin-left: 10px;
-        }
-        .voice-toggle.active {
-            background-color: #dc3545;
-        }
-        .call-btn {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 25px;
-            font-size: 16px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
-            margin: 10px 0;
-        }
-        .call-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
-        }
-        .call-btn.active {
-            background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%);
-            animation: pulse 1.5s infinite;
-        }
-        @keyframes pulse {
-            0%, 100% { box-shadow: 0 4px 15px rgba(255, 65, 108, 0.4); }
-            50% { box-shadow: 0 6px 25px rgba(255, 65, 108, 0.7); }
-        }
-        .call-timer {
-            font-size: 18px;
-            font-weight: bold;
-            color: #667eea;
-            margin: 10px 0;
-        }
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.6);
-            z-index: 2000;
-            justify-content: center;
-            align-items: center;
-        }
-        .modal-content {
-            background: white;
-            padding: 30px;
-            border-radius: 15px;
-            max-width: 500px;
-            width: 90%;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
-            animation: modalSlide 0.3s ease;
-        }
-        @keyframes modalSlide {
-            from { opacity: 0; transform: translateY(-30px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .modal-content h3 {
-            margin-top: 0;
-            color: #333;
-        }
-        .escalation-form, .save-options {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            margin-top: 15px;
-        }
-        .escalation-form input, .escalation-form select {
-            padding: 10px;
-            border: 2px solid #ddd;
-            border-radius: 8px;
-            font-size: 14px;
-        }
-        .escalation-form button, .save-options button {
-            padding: 12px 20px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 14px;
-            transition: all 0.3s ease;
-        }
-        .escalation-form button:first-of-type, .save-options button:first-of-type {
-            background: #28a745;
-            color: white;
-        }
-        .escalation-form button:last-of-type, .save-options button:last-of-type {
-            background: #6c757d;
-            color: white;
-        }
-        .success {
-            color: #28a745;
-            font-weight: bold;
-            margin-top: 10px;
-        }
-        .error {
-            color: #dc3545;
-            font-weight: bold;
-            margin-top: 10px;
-        }
-        .whatsapp-link {
-            display: inline-block;
-            margin-top: 10px;
-            padding: 10px 20px;
-            background: #25D366;
-            color: white;
-            text-decoration: none;
-            border-radius: 8px;
-        }
-        /* Priority Level Styling */
-        .priority-high {
-            background: #ff416c;
-            color: white;
-            padding: 3px 10px;
-            border-radius: 12px;
-            font-weight: bold;
-            font-size: 0.85em;
-        }
-        .priority-medium {
-            background: #ffa502;
-            color: white;
-            padding: 3px 10px;
-            border-radius: 12px;
-            font-weight: bold;
-            font-size: 0.85em;
-        }
-        .priority-low {
-            background: #28a745;
-            color: white;
-            padding: 3px 10px;
-            border-radius: 12px;
-            font-weight: bold;
-            font-size: 0.85em;
-        }
-        /* Summary Box Styling */
-        .summary-box {
-            background: linear-gradient(135deg, #667eea20 0%, #764ba220 100%);
-            padding: 12px;
-            border-radius: 8px;
-            border-left: 4px solid #667eea;
-            margin-bottom: 15px;
-        }
-        /* Suggested Actions List */
-        #resSuggestedActions li {
-            margin-bottom: 5px;
-            color: #555;
-            font-size: 0.9em;
-        }
-        #resSuggestedActions li:before {
-            content: "→ ";
-            color: #28a745;
-            font-weight: bold;
-        }
-    </style>
+    <title>SupportAI | Intelligent Customer Service</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
     <div class="container">
-        <h1>📞 SupportAI - AI Customer Support</h1>
+        <h1><i class="fas fa-headset"></i> SupportAI</h1>
         
         <div class="call-simulation" id="callSimulation">
-            <div id="callStatus">🤖 AI Agent Ready - Click "Start Call" to begin</div>
+            <div id="callStatus"><i class="fas fa-robot"></i> AI Agent Ready - Click "Start Call" to begin</div>
             <div class="call-timer" id="callTimer" style="display:none;">0:00</div>
         </div>
 
-        <div class="voice-controls" style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; align-items: center; margin: 15px 0;">
-            <button class="call-btn" id="callBtn" title="Start Voice Call">
-                📞 Start Call
+        <div class="voice-controls">
+            <button class="call-btn" id="callBtn" onclick="toggleCallMode()" title="Start Voice Call">
+                <i class="fas fa-phone-alt"></i> Start Call
             </button>
-            <button class="mic-btn" id="micBtn" onclick="toggleVoiceMode()" title="Quick Voice Input" style="cursor: pointer;">
-                🎤
+            <button class="mic-btn" id="micBtn" onclick="toggleVoiceMode()" title="Quick Voice Input">
+                <i class="fas fa-microphone"></i>
             </button>
             <div class="voice-status" id="voiceStatus" style="display:none;">Ready</div>
         </div>
         
         <div class="chat-box" id="chatWindow">
-            <div class="bot-msg">Welcome to SupportAI! How can I assist you today?</div>
+            <div class="bot-msg msg"><i class="fas fa-robot"></i> Welcome to SupportAI! How can I assist you today?</div>
         </div>
 
         <div class="input-group" id="textInputGroup">
-            <input type="text" id="userInput" placeholder="Type your message here..." onkeypress="handleKeyPress(event)">
-            <button onclick="sendMessage()">Send</button>
+            <input type="text" id="userInput" placeholder="Ask anything about our industrial solutions..." onkeypress="handleKeyPress(event)">
+            <button onclick="sendMessage()"><i class="fas fa-paper-plane"></i> Send</button>
         </div>
         
-        <div id="voiceTranscript" class="transcript" style="display:none;"></div>
+        <div id="voiceTranscript" class="transcript" style="display:none; text-align: center; margin-bottom: 1rem; color: var(--text-muted);"></div>
 
         <div class="details" id="aiDetails" style="display:none;">
-            <h3>📊 AI Analysis Breakdown</h3>
+            <h3><i class="fas fa-bolt"></i> AI Analysis Breakdown</h3>
             
-            <!-- Summary Section -->
-            <div class="detail-item summary-box"><strong>📋 Issue Summary:</strong> <span id="resSummary" style="font-weight: 500; color: #333;"></span></div>
-            
-            <!-- Main Fields -->
-            <div class="detail-item"><strong>Category:</strong> <span id="resCategory"></span></div>
-            <div class="detail-item"><strong>Service:</strong> <span id="resService"></span></div>
-            <div class="detail-item"><strong>Sentiment:</strong> <span id="resSentiment"></span></div>
-            
-            <!-- Confidence with Reason -->
-            <div class="detail-item"><strong>Confidence:</strong> <span id="resConfidence"></span>%</div>
-            <div class="detail-item"><strong>🎯 Confidence Reason:</strong> <span id="resConfidenceReason" style="font-style: italic; color: #666;"></span></div>
-            
-            <!-- Response Time -->
-            <div class="detail-item"><strong>⚡ Response Time:</strong> <span id="resResponseTime" style="font-family: monospace; color: #28a745;"></span></div>
-            
-            <!-- Escalation Info -->
-            <div class="detail-item"><strong>Escalation:</strong> <span id="resEscalation"></span></div>
-            <div class="detail-item"><strong>🚨 Escalation Priority:</strong> <span id="resEscalationPriority"></span></div>
-            
-            <!-- Suggested Actions -->
-            <div class="detail-item">
-                <strong>✅ Suggested Actions:</strong>
-                <ul id="resSuggestedActions" style="margin-top: 5px; padding-left: 20px;"></ul>
+            <div class="detail-item summary-box" style="margin-top: 1rem;">
+                <strong><i class="fas fa-info-circle"></i> Issue Summary:</strong>
+                <span id="resSummary" style="color: var(--text);"></span>
             </div>
             
-            <!-- Decision Trace -->
-            <div class="detail-item"><strong>Decision Trace:</strong> <span id="resDecisionTrace" style="font-size: 0.85em; color: #666;"></span></div>
+            <div class="detail-item"><strong><i class="fas fa-tags"></i> Category:</strong> <span id="resCategory"></span></div>
+            <div class="detail-item"><strong><i class="fas fa-cogs"></i> Service:</strong> <span id="resService"></span></div>
+            <div class="detail-item"><strong><i class="fas fa-smile"></i> Sentiment:</strong> <span id="resSentiment"></span></div>
+            <div class="detail-item"><strong><i class="fas fa-bullseye"></i> Confidence:</strong> <span id="resConfidence"></span></div>
+            <div class="detail-item"><strong><i class="fas fa-brain"></i> Reason:</strong> <span id="resConfidenceReason" style="font-style: italic;"></span></div>
+            <div class="detail-item"><strong><i class="fas fa-stopwatch"></i> Response Time:</strong> <span id="resResponseTime"></span></div>
+            <div class="detail-item"><strong><i class="fas fa-rocket"></i> Escalation:</strong> <span id="resEscalation"></span></div>
+            <div class="detail-item"><strong><i class="fas fa-layer-group"></i> Priority:</strong> <span id="resEscalationPriority"></span></div>
+            
+            <div class="detail-item" style="flex-direction: column; align-items: flex-start; gap: 0.5rem; border-bottom: none;">
+                <strong><i class="fas fa-tasks"></i> Suggested Actions:</strong>
+                <ul id="resSuggestedActions" style="width: 100%; padding-left: 1.5rem; margin-top: 0.5rem;"></ul>
+            </div>
         </div>
         
-        <div style="margin-top: 15px; padding: 10px; background: #f8f9fa; border-radius: 5px; font-size: 12px; color: #666;">
-            <strong>🎤 Voice Call Mode:</strong> Click "Start Call" for continuous voice conversation. AI will speak all responses automatically.
+        <div style="margin-top: 1.5rem; text-align: center;">
+            <button class="button stats-btn" onclick="location.href='/admin'"><i class="fas fa-user-shield"></i> Admin Panel</button>
+            <button class="button stats-btn" onclick="showSaveChatDialog()" style="background: var(--info); color: white; margin-left: 0.5rem;"><i class="fas fa-save"></i> Save Chat</button>
+            <button class="button stats-btn" onclick="showContactModal()" style="background: var(--warning); color: #1e293b; margin-left: 0.5rem;"><i class="fas fa-id-card"></i> Add Contact</button>
         </div>
-
-        <button class="stats-btn" onclick="viewStats()">View Session Stats</button>
-        <button class="stats-btn" onclick="showSaveChatDialog()" style="background: #17a2b8; margin-left: 10px;">💾 Save Chat</button>
-        <button class="stats-btn" onclick="showContactModal()" style="background: #ffc107; margin-left: 10px;">📞 Provide Contact</button>
-        <div id="statsBox" class="details" style="display:none;"></div>
     </div>
 
-    <!-- Escalation Modal -->
-    <div id="escalationModal" class="modal" style="display:none;">
+    <!-- Modals (Escalation, Contact, Save) remain the same functionality but get style.css styling -->
+    <div id="escalationModal" class="modal">
         <div class="modal-content">
-            <h3>🚨 Escalate to Human Support</h3>
-            <div class="escalation-form">
-                <input type="text" id="escalationName" placeholder="Enter your full name" required>
-                <select id="escalationType" onchange="updateContactPlaceholder()">
-                    <option value="email">📧 Email</option>
-                    <option value="phone">📱 Phone/WhatsApp</option>
+            <h3><i class="fas fa-exclamation-circle"></i> Human Intervention Required</h3>
+            <div class="escalation-form" style="display: flex; flex-direction: column; gap: 1rem; margin-top: 1rem;">
+                <input type="text" id="escalationName" placeholder="Enter your full name">
+                <select id="escalationType" onchange="updateContactPlaceholder()" style="padding: 0.75rem; background: var(--surface); color: var(--text); border: 1px solid var(--glass-border); border-radius: var(--radius-md);">
+                    <option value="email">📧 Email Response</option>
+                    <option value="phone">📱 WhatsApp / Call</option>
                 </select>
-                <input type="text" id="escalationContact" placeholder="Enter your email address">
-                <button onclick="submitEscalation()">Submit Escalation</button>
-                <button onclick="closeEscalationModal()">Cancel</button>
+                <input type="text" id="escalationContact" placeholder="Enter contact information">
+                <button onclick="submitEscalation()"><i class="fas fa-check"></i> Request Human Agent</button>
+                <button onclick="closeEscalationModal()" class="stats-btn">Cancel</button>
             </div>
-            <div id="escalationResult" style="margin-top: 15px;"></div>
+            <div id="escalationResult" style="margin-top: 1rem;"></div>
         </div>
     </div>
 
-    <!-- Simple Contact Collection Modal -->
-    <div id="contactModal" class="modal" style="display:none;">
+    <div id="contactModal" class="modal">
         <div class="modal-content">
-            <h3>📞 Provide Contact Information</h3>
-            <p style="margin-bottom: 15px; color: #666;">Please enter your email or phone number so we can contact you.</p>
-            <div class="escalation-form">
-                <input type="text" id="simpleContact" placeholder="Enter your email or phone number" style="width: 100%; margin-bottom: 10px;">
-                <button onclick="submitSimpleContact()">Submit Contact</button>
-                <button onclick="closeContactModal()">Skip</button>
+            <h3><i class="fas fa-address-book"></i> Stay in Touch</h3>
+            <p style="margin: 1rem 0; color: var(--text-muted);">Our team can follow up with more details.</p>
+            <div class="escalation-form" style="display: flex; flex-direction: column; gap: 1rem;">
+                <input type="text" id="simpleContact" placeholder="Email or Phone Number">
+                <button onclick="submitSimpleContact()"><i class="fas fa-paper-plane"></i> Save Info</button>
+                <button onclick="closeContactModal()" class="stats-btn">Dismiss</button>
             </div>
-            <div id="contactResult" style="margin-top: 15px;"></div>
+            <div id="contactResult" style="margin-top: 1rem;"></div>
         </div>
     </div>
 
     <script src="/static/script.js"></script>
 </body>
+</html>
 </html>

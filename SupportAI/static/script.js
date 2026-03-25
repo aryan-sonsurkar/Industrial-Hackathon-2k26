@@ -434,8 +434,19 @@ function displayMessage(sender, text, className) {
     const chatWindow = document.getElementById('chatWindow');
     if (!chatWindow) return;
     const div = document.createElement('div');
-    div.className = className;
-    div.innerHTML = `<strong>${sender}:</strong> ${text}`;
+    div.className = `${className} msg`;
+    
+    // Add icon based on sender
+    let icon = '';
+    if (sender === 'You' || className.includes('user-msg')) {
+        icon = '<i class="fas fa-user"></i> ';
+    } else if (sender === 'SupportAI' || className.includes('bot-msg')) {
+        icon = '<i class="fas fa-robot"></i> ';
+    } else if (className.includes('error')) {
+        icon = '<i class="fas fa-exclamation-triangle"></i> ';
+    }
+    
+    div.innerHTML = `<strong>${icon}${sender}:</strong> ${text}`;
     chatWindow.appendChild(div);
     chatWindow.scrollTop = chatWindow.scrollHeight;
 }
