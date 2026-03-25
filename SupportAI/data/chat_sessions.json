@@ -126,5 +126,21 @@
       }
     ],
     "transcript": "SUPPORTAI CHAT TRANSCRIPT\nSession ID: 1774408693400\nDate: 2026-03-25 08:52:18\n\n[8:48:52 am] You: My website is not working what can be the issue??\n[8:49:00 am] SupportAI: I'm sorry to hear that your website is not functioning as expected. To help troubleshoot, could you please provide more details about the issue? For example, what error messages do you see, or what happens when you try to access specific pages?\n\n---\nThank you for using SupportAI!\nFor further assistance, contact: aryansonsurkar87@gmail.com"
+  },
+  "1774412433108": {
+    "created_at": "2026-03-25T09:54:46.005968",
+    "conversation": [
+      {
+        "sender": "You",
+        "text": "hello",
+        "time": "9:51:05 am"
+      },
+      {
+        "sender": "SupportAI",
+        "text": "Thank you for reaching out! I'm happy to help with any questions or concerns you may have. Can you please specify what's on your mind or what you're looking for?",
+        "time": "9:51:22 am"
+      }
+    ],
+    "transcript": "SUPPORTAI CHAT TRANSCRIPT\nSession ID: 1774412433108\nDate: 2026-03-25 09:54:46\n\n[9:51:05 am] You: hello\n[9:51:22 am] SupportAI: Thank you for reaching out! I'm happy to help with any questions or concerns you may have. Can you please specify what's on your mind or what you're looking for?\n\n---\nThank you for using SupportAI!\nFor further assistance, contact: aryansonsurkar87@gmail.com"
   }
 }
